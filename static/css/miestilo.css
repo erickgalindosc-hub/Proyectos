@@ -1,0 +1,42 @@
+.mf1 {
+    background-color: blue;
+    border-radius: 10px;
+    padding: 15px;
+}
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap');
+.titulo{
+  text-align: center;
+  font-family: 'Dancing Script', cursive;
+  font-size: 2rem;
+  color: #ffffff;
+  text-shadow:
+    -1px -1px 0 #000,
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000,
+     0 0 5px #ff00cc,
+     0 0 10px #ff66cc;
+}
+.color{
+color: #00ff00; /* Verde brillante */
+text-shadow:
+    -1px -1px 0 #000,  
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000,
+     0 0 5px #00ff00,
+     0 0 10px #00ff00,
+     0 0 20px #00ff00;
+
+    text-align: center;
+}
+
+body {
+    background-image: url('/static/img/fonbase.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover; /* usa "contain" si quieres ver la imagen completa sin recortes */
+    margin: 0;
+    height: 100vh;
+}
+

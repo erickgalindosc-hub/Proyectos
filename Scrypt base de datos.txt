@@ -1,0 +1,54 @@
+CREATE DATABASE IF NOT EXISTS LyM CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE LyM;
+
+CREATE TABLE usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    correo VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    rol ENUM('admin','cliente') DEFAULT 'cliente',
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE categorias (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT
+);
+
+CREATE TABLE productos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    precio DECIMAL(10,2) NOT NULL,
+    stock INT DEFAULT 0,
+    id_categoria INT,
+    FOREIGN KEY (id_categoria) REFERENCES categorias(id) ON DELETE SET NULL
+);
+
+CREATE TABLE movimientos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tipo ENUM('entrada','salida') NOT NULL,
+    cantidad INT NOT NULL,
+    id_producto INT,
+    id_usuario INT,
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_producto) REFERENCES productos(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+
+
+-- Categorías iniciales
+INSERT INTO categorias (nombre, descripcion) VALUES
+('Papelería', 'Productos de oficina y papelería'),
+('Escolar', 'Útiles escolares'),
+('Arte', 'Material artístico');
+
+-- Productos iniciales
+INSERT INTO productos (nombre, descripcion, precio, stock, id_categoria) VALUES
+('Cuaderno', 'Cuaderno rayado de 100 hojas', 4500, 50, 1),
+('Lápiz HB', 'Lápiz de grafito estándar', 1200, 100, 2),
+('Pincel #3', 'Pincel fino para pintura', 3000, 30, 3);
+
+ALTER TABLE productos ADD COLUMN imagen VARCHAR(255) NULL ;

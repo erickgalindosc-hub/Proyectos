@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% block title %}Gestión de Movimientos - Papelería LyM{% endblock %}
+{% block page_title %}Gestión de Movimientos{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+  <div class="card-body">
+
+    <div class="d-flex justify-content-between mb-3 align-items-center">
+      <form action="{{ url_for('agregar_movimiento') }}" method="POST" class="d-flex gap-2 w-75">
+        <select name="id_producto" class="form-select" required>
+          <option value="">Seleccione producto</option>
+          {% for p in productos %}
+          <option value="{{ p[0] }}">{{ p[1] }}</option>
+          {% endfor %}
+        </select>
+        <select name="tipo" class="form-select" required>
+          <option value="entrada">Entrada</option>
+          <option value="salida">Salida</option>
+        </select>
+        <input type="number" name="cantidad" min="1" class="form-control" placeholder="Cantidad" required>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-plus-circle-fill"></i> Registrar
+        </button>
+      </form>
+
+      {% if rol == 'admin' %}
+      <div class="d-flex gap-2">
+        <button class="btn btn-success" onclick="window.print()">
+          <i class="bi bi-printer-fill"></i> Imprimir
+        </button>
+
+        <!-- 🔄 Botón Reiniciar -->
+        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#reiniciarModal">
+          <i class="bi bi-arrow-counterclockwise"></i> Reiniciar tabla
+        </button>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if movimientos %}
+    <div class="table-responsive">
+      <table class="table table-striped align-middle text-center">
+        <thead class="table-dark">
+          <tr>
+            <th>ID</th>
+            <th>Tipo</th>
+            <th>Cantidad</th>
+            <th>Producto</th>
+            <th>Usuario</th>
+            <th>Fecha</th>
+            {% if rol == 'admin' %}
+            <th>Acciones</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in movimientos %}
+          <tr>
+            <td>{{ m[0] }}</td>
+            <td>{{ m[1]|capitalize }}</td>
+            <td>{{ m[2] }}</td>
+            <td>{{ m[3] }}</td>
+            <td>{{ m[4] }}</td>
+            <td>{{ m[5].strftime('%Y-%m-%d %H:%M') if m[5] else '' }}</td>
+
+            {% if rol == 'admin' %}
+            <td>
+              <!-- Botón editar -->
+              <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editarModal{{ m[0] }}">
+                <i class="bi bi-pencil-square"></i>
+              </button>
+
+              <!-- Botón eliminar -->
+              <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#eliminarModal{{ m[0] }}">
+                <i class="bi bi-trash-fill"></i>
+              </button>
+            </td>
+            {% endif %}
+          </tr>
+
+          <!-- 🔹 Modal Editar -->
+          <div class="modal fade" id="editarModal{{ m[0] }}" tabindex="-1" aria-labelledby="editarLabel{{ m[0] }}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <form action="{{ url_for('editar_movimiento', id=m[0]) }}" method="POST">
+                  <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="editarLabel{{ m[0] }}">Editar Movimiento #{{ m[0] }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="mb-3">
+                      <label class="form-label">Tipo</label>
+                      <select name="tipo" class="form-select" required>
+                        <option value="entrada" {% if m[1]=='entrada' %}selected{% endif %}>Entrada</option>
+                        <option value="salida" {% if m[1]=='salida' %}selected{% endif %}>Salida</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Cantidad</label>
+                      <input type="number" name="cantidad" value="{{ m[2] }}" min="1" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Producto</label>
+                      <select name="id_producto" class="form-select" required>
+                        {% for p in productos %}
+                        <option value="{{ p[0] }}" {% if p[1] == m[3] %}selected{% endif %}>{{ p[1] }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- 🔹 Modal Eliminar -->
+          <div class="modal fade" id="eliminarModal{{ m[0] }}" tabindex="-1" aria-labelledby="eliminarLabel{{ m[0] }}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <form action="{{ url_for('eliminar_movimiento', id=m[0]) }}" method="POST">
+                  <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    ¿Deseas eliminar el movimiento
+                    <strong>#{{ m[0] }}</strong> de tipo
+                    <strong>{{ m[1]|capitalize }}</strong>?
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center">No hay movimientos registrados.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- 🔹 Modal de confirmación de reinicio -->
+<div class="modal fade" id="reiniciarModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form action="{{ url_for('reiniciar_movimientos') }}" method="POST">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">Reiniciar Tabla de Movimientos</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          ⚠️ Esto eliminará <strong>todos los movimientos registrados</strong> y reiniciará el contador desde el ID 1.<br>
+          Esta acción no se puede deshacer.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger">Reiniciar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
