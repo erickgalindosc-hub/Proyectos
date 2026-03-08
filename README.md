@@ -1,132 +1,25 @@
-````markdown
-# 📚 Sistema de Gestión Papelería LyM
+# 📚 Sistema de Gestión Papelería LyM - Versión 2.0
 
-Sistema web desarrollado en **Python, Flask y MySQL** para la gestión de inventarios, usuarios, categorías y movimientos dentro de una papelería.  
-El sistema permite administrar productos, controlar inventario y generar reportes automáticos en PDF mediante una interfaz web segura y moderna.
+Sistema web profesional desarrollado en **Python, Flask y MySQL** para la gestión integral de inventarios, usuarios, categorías y movimientos. Esta versión incluye un rediseño completo de la interfaz de usuario y optimizaciones críticas en el backend.
 
 ---
 
-# 🚀 Características principales
+# 🚀 Novedades de esta Versión
 
-- Gestión de **productos**
-- Gestión de **usuarios**
-- Gestión de **categorías**
-- Registro de **movimientos de inventario**
-- Generación de **reportes en PDF**
-- Sistema de **roles de usuario**
-- Interfaz web amigable
-- Vista previa de imágenes de productos
+- **Dashboard General**: Nueva vista con estadísticas en tiempo real (Total de productos, Alertas de stock bajo, Total de usuarios y movimientos recientes).
+- **Interfaz Moderna**: Sidebar fijo y responsivo con iconos dinámicos y navegación intuitiva.
+- **Experiencia de Usuario Mejorada**: Uso de ventanas modales para todas las operaciones CRUD, evitando recargas innecesarias de página.
+- **Optimización del Backend**: Implementación de gestores de contexto (`with`) para conexiones seguras a la base de datos.
+- **Seguridad Reforzada**: Decoradores de acceso restringido para rutas críticas y manejo seguro de sesiones.
+- **Higiene del Repositorio**: Inclusión de `.gitignore` para mantener el código limpio de archivos temporales y datos sensibles.
 
 ---
 
-# 🛠 Tecnologías utilizadas
+# 🛠 Tecnologías y Librerías
 
-- Python 3
-- Flask
-- MySQL
-- HTML5
-- CSS3
-- JavaScript
-- ReportLab (generación de PDF)
-
----
-
-# 📦 Librerías utilizadas
-
-```bash
-flask
-flask_mysqldb
-werkzeug
-reportlab
-````
-
----
-
-# ⚙️ Requisitos del sistema
-
-Antes de ejecutar el proyecto debes tener instalado:
-
-* Python **3.10 o superior**
-* **MySQL 8**
-* Navegador web moderno (Google Chrome o Microsoft Edge)
-
----
-
-# 📁 Estructura del proyecto
-
-```
-Papeleria-LyM/
-│
-├── static/
-│   ├── css/
-│   ├── js/
-│   └── images/
-│
-├── templates/
-│
-├── app.py
-│
-└── database.sql
-```
-
-### Descripción
-
-* **static/** → Archivos estáticos como CSS, JavaScript e imágenes
-* **templates/** → Vistas HTML del sistema
-* **app.py** → Archivo principal que ejecuta la aplicación Flask
-* **database.sql** → Script para crear la base de datos
-
----
-
-# 🗄 Base de datos
-
-El sistema utiliza **MySQL** con las siguientes tablas principales:
-
-* usuarios
-* productos
-* categorias
-* movimientos
-
-Estas tablas permiten administrar la información del inventario y los registros del sistema.
-
----
-
-# ▶️ Instalación y ejecución
-
-## 1️⃣ Clonar el repositorio
-
-```bash
-git clone https://github.com/erickgalindosc-hub/NOMBRE_DEL_REPOSITORIO.git
-```
-
----
-
-## 2️⃣ Crear la base de datos
-
-En MySQL ejecutar:
-
-```sql
-CREATE DATABASE LyM;
-```
-
-Luego importar el archivo **database.sql** con las tablas del sistema.
-
----
-
-## 3️⃣ Configurar la conexión
-
-Editar el archivo **app.py** y configurar las credenciales de MySQL:
-
-```python
-MYSQL_HOST = 'localhost'
-MYSQL_USER = 'tu_usuario'
-MYSQL_PASSWORD = 'tu_contraseña'
-MYSQL_DB = 'LyM'
-```
-
----
-
-## 4️⃣ Instalar dependencias
+- **Backend**: Python 3.10+, Flask, Flask-MySQLdb, Werkzeug (Security).
+- **Frontend**: Bootstrap 5, Bootstrap Icons, Jinja2 Templates.
+- **Reportes**: ReportLab (Generación de PDF).
 
 ```bash
 pip install flask flask_mysqldb werkzeug reportlab
@@ -134,79 +27,74 @@ pip install flask flask_mysqldb werkzeug reportlab
 
 ---
 
-## 5️⃣ Ejecutar el servidor
+# 📁 Estructura del Proyecto Actualizada
 
-```bash
-python app.py
+```
+Papeleria-LyM/
+│
+├── static/
+│   ├── css/            # Estilos personalizados y Bootstrap
+│   ├── js/             # Scripts de comportamiento y UI
+│   ├── img/            # Logotipos y recursos visuales
+│   └── uploads/        # Imágenes de productos (Grit-ignored)
+│
+├── templates/
+│   ├── partials/       # Fragmentos de plantillas (Modales, etc.)
+│   ├── base.html       # Estructura principal con Sidebar
+│   ├── dashboard.html  # Nueva vista de estadísticas
+│   └── ...             # Vistas de Productos, Usuarios, etc.
+│
+├── app.py              # Lógica central optimizada
+├── .gitignore          # Reglas de exclusión de archivos
+└── database.sql        # Script de inicialización de la BD
 ```
 
 ---
 
-## 6️⃣ Acceder al sistema
+# ⚙️ Instalación y Configuración Rápida
 
-Abrir en el navegador:
-
-```
-http://localhost:5000
-```
-
----
-
-# 👥 Roles del sistema
-
-## Administrador
-
-* Gestión completa del sistema
-* Crear, editar y eliminar productos
-* Administrar usuarios
-* Generar reportes PDF
-* Reiniciar tablas
-
-## Cliente
-
-* Visualizar productos
-* Registrar movimientos
+1. **Base de Datos**: Crea una base de datos MySQL llamada `LyM` e importa el script `database.sql`.
+2. **Configuración**: Ajusta las credenciales en `app.py`:
+   ```python
+   app.config["MYSQL_HOST"] = "localhost"
+   app.config["MYSQL_USER"] = "tu_usuario"
+   app.config["MYSQL_PASSWORD"] = "tu_clave"
+   app.config["MYSQL_DB"] = "LyM"
+   ```
+3. **Ejecución**:
+   ```bash
+   python app.py
+   ```
+4. **Acceso**: Entra a `http://localhost:5000`.
+   - *Admin por defecto*: `admin1@gmail.com` / `admin123`
 
 ---
 
-# 📊 Funcionalidades
+# 📊 Roles y Funcionalidades
 
-* CRUD completo de productos
-* CRUD de usuarios
-* CRUD de categorías
-* Registro de movimientos
-* Generación de reportes PDF
-* Alertas informativas del sistema
+### 🛡️ Administrador
+- Acceso total al **Dashboard**.
+- Gestión de inventario (Crear, Editar, Eliminar productos con imágenes).
+- Control de **Usuarios** y **Categorías**.
+- Generación de reportes PDF detallados.
+- Funciones de mantenimiento (Reiniciar tablas).
 
----
-
-# 📷 Vista previa del sistema
-
-Puedes agregar capturas del sistema aquí.
-
-```
-/screenshots/login.png
-/screenshots/dashboard.png
-/screenshots/inventario.png
-```
+### 👥 Cliente / Usuario
+- Acceso al catálogo de productos con búsqueda avanzada.
+- Registro de **Movimientos** (Entradas y Salidas de mercancía).
+- Alertas visuales de stock bajo.
 
 ---
 
-# 👨‍💻 Autor
+# 👨‍💻 Autor y Mantenimiento
 
 **Erick Santiago Galindo Cepeda**
+*Desarrollador Full Stack en formación (SENA)*
 
-* Estudiante de **Análisis y Desarrollo de Software (SENA)**
-* Interés en desarrollo **Full Stack**
-
-GitHub:
-https://github.com/erickgalindosc
+Esta versión fue optimizada para ser escalable y fácil de versionar en el futuro.
 
 ---
 
 # 📄 Licencia
 
-Proyecto desarrollado con fines **educativos y académicos**.
-
-```
-```
+Proyecto con fines educativos y de gestión empresarial básica.
