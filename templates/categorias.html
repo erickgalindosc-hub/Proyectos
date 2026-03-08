@@ -1,102 +1,128 @@
 {% extends 'base.html' %}
-{% block title %}Gestión de Categorías - Papelería LyM{% endblock %}
+{% block title %}Categorías - Papelería LyM{% endblock %}
 {% block page_title %}Gestión de Categorías{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm">
-    <div class="card-body">
-        {% if rol == 'admin' %}
-        <div class="d-flex justify-content-between mb-3 align-items-center">
-            <form action="{{ url_for('agregar_categoria') }}" method="POST" class="d-flex gap-2 w-75">
-                <input type="text" name="nombre" class="form-control" placeholder="Nombre" required>
-                <input type="text" name="descripcion" class="form-control" placeholder="Descripción" required>
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-plus-circle-fill"></i> Agregar
-                </button>
-            </form>
-
-            <div class="d-flex gap-2">
-                <button class="btn btn-success" onclick="window.print()">
-                    <i class="bi bi-printer-fill"></i> Imprimir
-                </button>
-
-                <!-- 🔄 Botón reiniciar tabla -->
-                <form action="{{ url_for('reiniciar_categorias') }}" method="POST"
-                      onsubmit="return confirm('⚠️ ¿Seguro que deseas reiniciar la tabla de categorías? Esto eliminará todos los registros y reiniciará el contador de IDs.');">
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-arrow-counterclockwise"></i> Reiniciar tabla
-                    </button>
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+        <div class="row align-items-center g-3">
+            <div class="col-md-8">
+                <form action="{{ url_for('agregar_categoria') }}" method="POST" class="row g-2">
+                    <div class="col-md-4">
+                        <input type="text" name="nombre" class="form-control bg-light" placeholder="Nombre de categoría" required>
+                    </div>
+                    <div class="col-md-5">
+                        <input type="text" name="descripcion" class="form-control bg-light" placeholder="Descripción breve" required>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100 fw-bold">
+                            <i class="bi bi-plus-lg me-1"></i> Agregar
+                        </button>
+                    </div>
                 </form>
             </div>
+            <div class="col-md-4 text-md-end border-start">
+                {% if rol == 'admin' %}
+                    <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalReiniciarCategorias">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reiniciar Tabla
+                    </button>
+                {% endif %}
+            </div>
         </div>
-        {% endif %}
+    </div>
+</div>
 
-        {% if categorias %}
-        <div class="table-responsive">
-            <table class="table table-striped align-middle text-center">
-                <thead class="table-dark">
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Descripción</th>
-                        {% if rol == 'admin' %}
-                        <th>Acciones</th>
-                        {% endif %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for c in categorias %}
-                    <tr>
-                        <td>{{ c[0] }}</td>
-                        <td>{{ c[1] }}</td>
-                        <td>{{ c[2] }}</td>
-                        {% if rol == 'admin' %}
-                        <td>
-                            <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editarModal{{ c[0] }}">
-                                <i class="bi bi-pencil-fill"></i>
-                            </button>
-                            <a href="{{ url_for('eliminar_categoria', id=c[0]) }}" class="btn btn-danger btn-sm"
-                               onclick="return confirm('¿Eliminar esta categoría?')">
-                                <i class="bi bi-trash-fill"></i>
-                            </a>
-                        </td>
-                        {% endif %}
-                    </tr>
+{% if categorias %}
+<div class="card shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">ID</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th class="text-end pe-4">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in categorias %}
+                <tr>
+                    <td class="ps-4 text-muted">#{{ c[0] }}</td>
+                    <td class="fw-bold text-dark">{{ c[1] }}</td>
+                    <td class="text-muted">{{ c[2] }}</td>
+                    <td class="text-end pe-4">
+                        <button type="button" class="btn btn-light btn-sm rounded-pill px-3 me-1 text-warning" data-bs-toggle="modal" data-bs-target="#editarModal{{ c[0] }}">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <a href="{{ url_for('eliminar_categoria', id=c[0]) }}" class="btn btn-light btn-sm rounded-pill px-3 text-danger"
+                           onclick="return confirm('¿Eliminar esta categoría?')">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
 
-                    <!-- Modal de edición -->
-                    <div class="modal fade" id="editarModal{{ c[0] }}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <form action="{{ url_for('editar_categoria', id=c[0]) }}" method="POST">
-                                    <div class="modal-header bg-dark text-white">
-                                        <h5 class="modal-title">Editar Categoría</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <!-- Modal de edición -->
+                <div class="modal fade" id="editarModal{{ c[0] }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 shadow-lg">
+                            <form action="{{ url_for('editar_categoria', id=c[0]) }}" method="POST">
+                                <div class="modal-header bg-warning text-dark">
+                                    <h5 class="modal-title fw-bold">Editar Categoría</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body p-4">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Nombre</label>
+                                        <input type="text" name="nombre" class="form-control bg-light" value="{{ c[1] }}" required>
                                     </div>
-                                    <div class="modal-body">
-                                        <div class="mb-3">
-                                            <label class="form-label">Nombre</label>
-                                            <input type="text" name="nombre" class="form-control" value="{{ c[1] }}" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Descripción</label>
-                                            <input type="text" name="descripcion" class="form-control" value="{{ c[2] }}" required>
-                                        </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Descripción</label>
+                                        <textarea name="descripcion" class="form-control bg-light" rows="3" required>{{ c[2] }}</textarea>
                                     </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                        <button type="submit" class="btn btn-primary">Guardar cambios</button>
-                                    </div>
-                                </form>
-                            </div>
+                                </div>
+                                <div class="modal-footer bg-light border-0">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="btn btn-warning fw-bold text-dark px-4">Guardar cambios</button>
+                                </div>
+                            </form>
                         </div>
                     </div>
-                    {% endfor %}
-                </tbody>
-            </table>
+                </div>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="card shadow-sm border-0 py-5 text-center">
+    <div class="card-body">
+        <i class="bi bi-tags text-muted display-1"></i>
+        <h4 class="mt-4 text-dark">No hay categorías registradas</h4>
+        <p class="text-muted">Crea una nueva categoría utilizando el formulario de arriba.</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal Reiniciar Categorías -->
+<div class="modal fade" id="modalReiniciarCategorias" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form action="{{ url_for('reiniciar_categorias') }}" method="POST">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold">Reiniciar Categorías</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <i class="bi bi-exclamation-triangle-fill text-danger display-1 mb-3"></i>
+                    <p class="fs-5 mb-1">¿Estás seguro de reiniciar la tabla de categorías?</p>
+                    <p class="text-muted small">Se eliminarán todas las categorías registradas. Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger fw-bold px-4">Confirmar Reinicio</button>
+                </div>
+            </form>
         </div>
-        {% else %}
-        <div class="alert alert-info text-center">No hay categorías registradas.</div>
-        {% endif %}
     </div>
 </div>
 {% endblock %}

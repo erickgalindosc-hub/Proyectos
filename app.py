@@ -79,7 +79,7 @@ def admin_required(f):
 @app.route("/")
 def index():
     if "usuario" in session:
-        return redirect(url_for("productos"))
+        return redirect(url_for("dashboard"))
     return render_template("index.html")
 
 @app.route("/login", methods=["POST"])
@@ -100,10 +100,44 @@ def login():
         session["usuario"] = user[1]
         session["rol"] = user[3]
         flash("Inicio de sesión exitoso", "success")
-        return redirect(url_for("productos"))
+        return redirect(url_for("dashboard"))
     else:
         flash("Correo o contraseña incorrectos.", "danger")
         return redirect(url_for("index"))
+
+# --- Dashboard ---
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    with mysql.connection.cursor() as cur:
+        # Total productos
+        cur.execute("SELECT COUNT(*) FROM productos")
+        total_productos = cur.fetchone()[0]
+
+        # Stock bajo (menos de 10)
+        cur.execute("SELECT COUNT(*) FROM productos WHERE stock < 10")
+        stock_bajo = cur.fetchone()[0]
+
+        # Total usuarios
+        cur.execute("SELECT COUNT(*) FROM usuarios")
+        total_usuarios = cur.fetchone()[0]
+
+        # Últimos 5 movimientos
+        cur.execute("""
+            SELECT m.tipo, m.cantidad, p.nombre, m.fecha
+            FROM movimientos m
+            LEFT JOIN productos p ON m.id_producto = p.id
+            ORDER BY m.fecha DESC LIMIT 5
+        """)
+        recientes = cur.fetchall()
+
+    return render_template("dashboard.html",
+                           total_productos=total_productos,
+                           stock_bajo=stock_bajo,
+                           total_usuarios=total_usuarios,
+                           recientes=recientes,
+                           rol=session["rol"],
+                           usuario=session["usuario"])
 
 @app.route("/logout")
 def logout():
@@ -142,34 +176,6 @@ def registro():
 
 
 
-#imagenes
-
-@app.route('/movimientos/subir_imagen/<int:id>', methods=['POST'])
-def subir_imagen(id):
-    if 'rol' not in session or session['rol'] != 'admin':
-        flash('No tienes permisos para realizar esta acción.', 'danger')
-        return redirect(url_for('movimientos'))
-
-    if 'imagen' not in request.files:
-        flash('No se seleccionó ningún archivo.', 'warning')
-        return redirect(url_for('movimientos'))
-
-    file = request.files['imagen']
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-
-        cur = mysql.connection.cursor()
-        cur.execute("UPDATE movimientos SET imagen = %s WHERE id = %s", (filename, id))
-        mysql.connection.commit()
-        cur.close()
-
-        flash('Imagen subida correctamente.', 'success')
-    else:
-        flash('Formato de archivo no permitido.', 'danger')
-
-    return redirect(url_for('movimientos'))
 
 
 # --- CRUD USUARIOS ---
