@@ -1,76 +1,110 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de Usuario</title>
-    <link rel="icon" href="{{ url_for('static', filename='logos/favicon.png') }}" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='js/color-modes.js') }}"></script>
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/style_temas.css') }}">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Registro - Papelería LyM</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e2a38 0%, #0d6efd 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        .auth-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 450px;
+            overflow: hidden;
+        }
+        .auth-header {
+            background-color: #f8f9fa;
+            padding: 40px 30px 20px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        .auth-logo {
+            width: 70px;
+            height: 70px;
+            background: #198754;
+            border-radius: 15px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(25, 135, 84, 0.3);
+        }
+        .auth-body {
+            padding: 30px 40px 40px;
+        }
+        .form-floating > .form-control:focus {
+            box-shadow: none;
+            border-color: #198754;
+        }
+        .btn-auth {
+            padding: 12px;
+            font-weight: 600;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        .auth-footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+    </style>
 </head>
-<body style="background-image: url('/static/img/azul.jpg');">
-
-   <svg xmlns="http://www.w3.org/2000/svg" class="d-none">
-		<symbol id="check2" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"></path></symbol>
-		<symbol id="circle-half" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 0 8 1v14zm0 1A8 8 0 1 1 8 0a8 8 0 0 1 0 16z"></path></symbol>
-		<symbol id="moon-stars-fill" viewBox="0 0 16 16"><path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z"></path><path d="M10.794 3.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387a1.734 1.734 0 0 0-1.097 1.097l-.387 1.162a.217.217 0 0 1-.412 0l-.387-1.162A1.734 1.734 0 0 0 9.31 6.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387a1.734 1.734 0 0 0 1.097-1.097l.387-1.162zM13.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.156 1.156 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.156 1.156 0 0 0-.732-.732l-.774-.258a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732L13.863.1z"></path></symbol>
-		<symbol id="sun-fill" viewBox="0 0 16 16"><path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z"></path></symbol>
-	</svg>
-	<div class="dropdown position-fixed bottom-0 end-0 mb-3 me-3 bd-mode-toggle">
-		<button class="btn btn-bd-primary py-2 dropdown-toggle d-flex align-items-center" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown" aria-label="Toggle theme (auto)"><svg class="bi my-1 theme-icon-active" aria-hidden="true"><use href="#circle-half"></use></svg><span class="visually-hidden" id="bd-theme-text">Toggle theme</span></button>
-		<ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="bd-theme-text">
-			<li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light" aria-pressed="false"><svg class="bi me-2 opacity-50" aria-hidden="true"><use href="#sun-fill"></use></svg>Claro<svg class="bi ms-auto d-none" aria-hidden="true"><use href="#check2"></use></svg></button></li>
-			<li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark" aria-pressed="false"><svg class="bi me-2 opacity-50" aria-hidden="true"><use href="#moon-stars-fill"></use></svg>Oscuro<svg class="bi ms-auto d-none" aria-hidden="true"><use href="#check2"></use></svg></button></li>
-			<li><button type="button" class="dropdown-item d-flex align-items-center active" data-bs-theme-value="auto" aria-pressed="true"><svg class="bi me-2 opacity-50" aria-hidden="true"><use href="#circle-half"></use></svg>Automático<svg class="bi ms-auto d-none" aria-hidden="true"><use href="#check2"></use></svg></button></li>
-		</ul>
-	</div>
-
-    <main class="d-flex">
-        <div class="container-fluid row m-0 vh-100 justify-content-center align-items-center">
-            <div class="card shadow w-auto">
-                <div class="card-body p-4">
-					<div class="text-center">
-						<img class="mb-4" src="{{ url_for('static', filename='img/milogo.png') }}" alt="" width="172" height="157">
-						<h5 class="text-center fw-bold text-body">REGÍSTRATE</h5>
-					</div>
-					
-					{% with messages = get_flashed_messages(with_categories=true) %}
-						{% if messages %}
-							{% for category, message in messages %}
-								<div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
-									{{ message }}
-									<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-								</div>
-							{% endfor %}
-						{% endif %}
-					{% endwith %}
-
-                    <form action="{{ url_for('registro') }}" method="POST" class="mt-3">
-                        <label>Nombre y apellidos</label>
-                        <input type="text" class="form-control mb-3" name="nombre_apellidos" required autocomplete="off" placeholder="Nombre completo">
-              
-                        <label>Correo Electrónico (será tu usuario)</label>
-                        <input type="email" class="form-control mb-3" name="correo" required autocomplete="off" placeholder="tu@correo.com">
-                                          
-                        <label>Contraseña</label>
-                        <input type="password" class="form-control mb-3" name="passw" required autocomplete="off" placeholder="Contraseña">
-						
-                        <button class="btn btn-success w-100 mt-2" type="submit">Registrar</button>
-						
-						<p class="text-center mt-3">
-                          <a href="{{ url_for('index') }}" class="link-underline-light">Si ya te registraste, inicia sesión aquí.</a>
-                        </p>
-                    </form> 	
-                </div>
+<body>
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="bi bi-person-plus"></i>
             </div>
+            <h4 class="fw-bold text-dark m-0">Crea tu cuenta</h4>
+            <p class="text-muted small">Únete a Papelería LyM</p>
         </div>
-    </main>
-	<footer class="position-fixed bottom-0 w-100 text-center p-2">
-		<p class="text-body-secondary"><a href="#" class="text-decoration-none">&copy; 2025 Esteban. Todos los derechos reservados.</a></p>
-  	</footer>  
+        <div class="auth-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show border-0 small py-2" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form action="{{ url_for('registro') }}" method="POST">
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control" name="nombre_apellidos" id="floatingNombre" placeholder="Nombre completo" required>
+                    <label for="floatingNombre">Nombre y apellidos</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <input type="email" class="form-control" name="correo" id="floatingInput" placeholder="name@example.com" required>
+                    <label for="floatingInput">Correo electrónico</label>
+                </div>
+                <div class="form-floating mb-4">
+                    <input type="password" class="form-control" name="passw" id="floatingPassword" placeholder="Contraseña" required>
+                    <label for="floatingPassword">Contraseña</label>
+                </div>
+
+                <button class="btn btn-success w-100 btn-auth" type="submit">Registrarme</button>
+
+                <div class="auth-footer">
+                    ¿Ya tienes una cuenta? <a href="{{ url_for('index') }}" class="text-decoration-none fw-bold text-success">Inicia Sesión</a>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 </html>

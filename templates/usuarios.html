@@ -3,140 +3,156 @@
 {% block page_title %}Gestión de Usuarios{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-
-    <div class="card shadow-sm mb-4">
-        <div class="card-body">
-            {% if rol == 'admin' %}
-            <div class="d-flex justify-content-between mb-3 align-items-center">
-                <h5 class="card-title">Agregar Nuevo Usuario</h5>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-success" onclick="window.print()">
-                        <i class="bi bi-printer-fill"></i> Imprimir
-                    </button>
-
-                    <!-- 🔄 Botón reiniciar tabla -->
-                    <form action="{{ url_for('reiniciar_usuarios') }}" method="POST"
-                          onsubmit="return confirm('⚠️ ¿Seguro que deseas reiniciar la tabla de usuarios? Esto eliminará todos los usuarios excepto el admin (ID 1).');">
-                        <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-arrow-counterclockwise"></i> Reiniciar tabla
-                        </button>
-                    </form>
-                </div>
-            </div>
-            {% endif %}
-
-            <form action="{{ url_for('agregar_usuario') }}" method="POST">
-                <div class="row mb-3 align-items-end">
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+        <div class="row align-items-center g-3">
+            <div class="col-md-9">
+                <form action="{{ url_for('agregar_usuario') }}" method="POST" class="row g-2 align-items-end">
                     <div class="col-md-3">
-                        <label>Nombre</label>
-                        <input type="text" class="form-control" name="nombre" required>
+                        <label class="form-label small fw-bold text-muted text-uppercase">Nombre</label>
+                        <input type="text" class="form-control bg-light" name="nombre" placeholder="Nombre completo" required>
                     </div>
                     <div class="col-md-3">
-                        <label>Correo</label>
-                        <input type="email" class="form-control" name="correo" required>
+                        <label class="form-label small fw-bold text-muted text-uppercase">Correo</label>
+                        <input type="email" class="form-control bg-light" name="correo" placeholder="ejemplo@correo.com" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Contraseña</label>
+                        <input type="password" class="form-control bg-light" name="password" required>
                     </div>
                     <div class="col-md-2">
-                        <label>Contraseña</label>
-                        <input type="password" class="form-control" name="password" required>
-                    </div>
-                    <div class="col-md-2">
-                        <label>Rol</label>
-                        <select name="rol" class="form-select">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Rol</label>
+                        <select name="rol" class="form-select bg-light">
                             <option value="cliente">Cliente</option>
                             <option value="admin">Admin</option>
                         </select>
                     </div>
-                    <div class="col-md-2">
-                        <button class="btn btn-primary w-100" type="submit">
-                            <i class="bi bi-person-plus-fill"></i> Agregar
+                    <div class="col-md-1">
+                        <button class="btn btn-primary w-100 fw-bold" type="submit">
+                            <i class="bi bi-person-plus-fill"></i>
                         </button>
                     </div>
+                </form>
+            </div>
+            <div class="col-md-3 text-md-end border-start">
+                <div class="d-flex gap-2 justify-content-end">
+                    <a href="{{ url_for('reporte_usuarios') }}" class="btn btn-success">
+                        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+                    </a>
+                    <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalReiniciarUsuarios">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
+</div>
 
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <h5 class="card-title mb-3">Usuarios Registrados</h5>
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle">
-                    <thead class="table-dark text-center">
-                        <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Correo</th>
-                            <th>Rol</th>
-                            <th>Fecha Registro</th>
-                            {% if rol == 'admin' %}<th>Acciones</th>{% endif %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for u in usuarios %}
-                        <tr>
-                            <td>{{ u[0] }}</td>
-                            <td>{{ u[1] }}</td>
-                            <td>{{ u[2] }}</td>
-                            <td>{{ u[3] }}</td>
-                            <td>{{ u[4] }}</td>
-                            {% if rol == 'admin' %}
-                            <td class="text-center">
-                                {% if u[0] != 1 %}
-                                <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#edit{{ u[0] }}">
-                                    <i class="bi bi-pencil-fill"></i>
-                                </button>
-                                <a href="{{ url_for('eliminar_usuario', id=u[0]) }}" class="btn btn-danger btn-sm" onclick="return confirm('¿Eliminar usuario?')">
-                                    <i class="bi bi-trash-fill"></i>
-                                </a>
-                                {% else %}
-                                <span class="badge bg-secondary">Protegido</span>
-                                {% endif %}
-                            </td>
-                            {% endif %}
-                        </tr>
+<div class="card shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">ID</th>
+                    <th>Nombre y Correo</th>
+                    <th>Rol</th>
+                    <th>Fecha de Registro</th>
+                    <th class="text-end pe-4">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in usuarios %}
+                <tr>
+                    <td class="ps-4 text-muted">#{{ u[0] }}</td>
+                    <td>
+                        <div class="fw-bold text-dark">{{ u[1] }}</div>
+                        <small class="text-muted"><i class="bi bi-envelope me-1"></i>{{ u[2] }}</small>
+                    </td>
+                    <td>
+                        {% if u[3] == 'admin' %}
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">Administrador</span>
+                        {% else %}
+                            <span class="badge bg-light text-dark border px-3 py-2">Cliente</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-muted small">
+                        {{ u[4].strftime('%d/%m/%Y %H:%M') if u[4] else 'N/A' }}
+                    </td>
+                    <td class="text-end pe-4">
+                        {% if u[0] != 1 %}
+                            <button class="btn btn-light btn-sm rounded-pill px-3 me-1 text-warning" data-bs-toggle="modal" data-bs-target="#edit{{ u[0] }}">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <a href="{{ url_for('eliminar_usuario', id=u[0]) }}" class="btn btn-light btn-sm rounded-pill px-3 text-danger" onclick="return confirm('¿Eliminar usuario?')">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2">Protegido</span>
+                        {% endif %}
+                    </td>
+                </tr>
 
-                        <!-- Modal editar -->
-                        <div class="modal fade" id="edit{{ u[0] }}" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <form action="{{ url_for('editar_usuario', id=u[0]) }}" method="POST">
-                                        <div class="modal-header bg-warning text-white">
-                                            <h5 class="modal-title">Editar Usuario</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <label>Nombre</label>
-                                            <input type="text" name="nombre" value="{{ u[1] }}" class="form-control mb-3">
-                                            <label>Correo</label>
-                                            <input type="email" name="correo" value="{{ u[2] }}" class="form-control mb-3">
-                                            <label>Rol</label>
-                                            <select name="rol" class="form-select">
-                                                <option value="cliente" {% if u[3]=='cliente' %}selected{% endif %}>Cliente</option>
-                                                <option value="admin" {% if u[3]=='admin' %}selected{% endif %}>Admin</option>
-                                            </select>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="submit" class="btn btn-primary">Guardar cambios</button>
-                                        </div>
-                                    </form>
+                {% if u[0] != 1 %}
+                <!-- Modal editar -->
+                <div class="modal fade" id="edit{{ u[0] }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 shadow-lg">
+                            <form action="{{ url_for('editar_usuario', id=u[0]) }}" method="POST">
+                                <div class="modal-header bg-warning text-dark">
+                                    <h5 class="modal-title fw-bold">Editar Usuario</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
-                            </div>
+                                <div class="modal-body p-4">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Nombre</label>
+                                        <input type="text" name="nombre" value="{{ u[1] }}" class="form-control bg-light" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Correo</label>
+                                        <input type="email" name="correo" value="{{ u[2] }}" class="form-control bg-light" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Rol</label>
+                                        <select name="rol" class="form-select bg-light">
+                                            <option value="cliente" {% if u[3]=='cliente' %}selected{% endif %}>Cliente</option>
+                                            <option value="admin" {% if u[3]=='admin' %}selected{% endif %}>Administrador</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="modal-footer bg-light border-0">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="btn btn-warning fw-bold text-dark px-4">Guardar Cambios</button>
+                                </div>
+                            </form>
                         </div>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Reiniciar Usuarios -->
+<div class="modal fade" id="modalReiniciarUsuarios" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form action="{{ url_for('reiniciar_usuarios') }}" method="POST">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold">Reiniciar Usuarios</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <i class="bi bi-exclamation-triangle-fill text-danger display-1 mb-3"></i>
+                    <p class="fs-5 mb-1">¿Estás seguro de limpiar la lista de usuarios?</p>
+                    <p class="text-muted small">Se eliminarán todos excepto el administrador principal. Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger fw-bold px-4">Confirmar Reinicio</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

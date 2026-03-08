@@ -35,26 +35,25 @@ mysql = MySQL(app)
 
 # --- Crear usuario administrador si no existe ---
 def create_admin():
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT COUNT(*) FROM usuarios WHERE rol='admin'")
-    existe_admin = cur.fetchone()[0]
-    if existe_admin == 0:
-        nombre = "Administrador"
-        correo = "admin1@gmail.com"
-        password = generate_password_hash("admin123")
-        rol = "admin"
-        cur.execute(
-            "INSERT INTO usuarios (nombre, correo, password, rol) VALUES (%s,%s,%s,%s)",
-            (nombre, correo, password, rol)
-        )
-        mysql.connection.commit()
-        print("✅ Usuario administrador creado: admin1@gmail.com / admin123")
-    else:
-        print("🟢 Usuario administrador ya existente.")
-    cur.close()
+    with app.app_context():
+        with mysql.connection.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM usuarios WHERE rol='admin'")
+            existe_admin = cur.fetchone()[0]
+            if existe_admin == 0:
+                nombre = "Administrador"
+                correo = "admin1@gmail.com"
+                password = generate_password_hash("admin123")
+                rol = "admin"
+                cur.execute(
+                    "INSERT INTO usuarios (nombre, correo, password, rol) VALUES (%s,%s,%s,%s)",
+                    (nombre, correo, password, rol)
+                )
+                mysql.connection.commit()
+                print("✅ Usuario administrador creado: admin1@gmail.com / admin123")
+            else:
+                print("🟢 Usuario administrador ya existente.")
 
-with app.app_context():
-    create_admin()
+create_admin()
 
 # --- Decoradores ---
 def login_required(f):
@@ -79,7 +78,7 @@ def admin_required(f):
 @app.route("/")
 def index():
     if "usuario" in session:
-        return redirect(url_for("productos"))
+        return redirect(url_for("dashboard"))
     return render_template("index.html")
 
 @app.route("/login", methods=["POST"])
@@ -90,20 +89,53 @@ def login():
         flash("Por favor completa todos los campos.", "warning")
         return redirect(url_for("index"))
 
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT id, nombre, password, rol FROM usuarios WHERE correo=%s", (correo,))
-    user = cur.fetchone()
-    cur.close()
+    with mysql.connection.cursor() as cur:
+        cur.execute("SELECT id, nombre, password, rol FROM usuarios WHERE correo=%s", (correo,))
+        user = cur.fetchone()
 
     if user and check_password_hash(user[2], password):
         session["id"] = user[0]
         session["usuario"] = user[1]
         session["rol"] = user[3]
         flash("Inicio de sesión exitoso", "success")
-        return redirect(url_for("productos"))
+        return redirect(url_for("dashboard"))
     else:
         flash("Correo o contraseña incorrectos.", "danger")
         return redirect(url_for("index"))
+
+# --- Dashboard ---
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    with mysql.connection.cursor() as cur:
+        # Total productos
+        cur.execute("SELECT COUNT(*) FROM productos")
+        total_productos = cur.fetchone()[0]
+
+        # Stock bajo (menos de 10)
+        cur.execute("SELECT COUNT(*) FROM productos WHERE stock < 10")
+        stock_bajo = cur.fetchone()[0]
+
+        # Total usuarios
+        cur.execute("SELECT COUNT(*) FROM usuarios")
+        total_usuarios = cur.fetchone()[0]
+
+        # Últimos 5 movimientos
+        cur.execute("""
+            SELECT m.tipo, m.cantidad, p.nombre, m.fecha
+            FROM movimientos m
+            LEFT JOIN productos p ON m.id_producto = p.id
+            ORDER BY m.fecha DESC LIMIT 5
+        """)
+        recientes = cur.fetchall()
+
+    return render_template("dashboard.html",
+                           total_productos=total_productos,
+                           stock_bajo=stock_bajo,
+                           total_usuarios=total_usuarios,
+                           recientes=recientes,
+                           rol=session["rol"],
+                           usuario=session["usuario"])
 
 @app.route("/logout")
 def logout():
@@ -124,52 +156,21 @@ def registro():
             return redirect(url_for("registro"))
 
         hash_pass = generate_password_hash(password)
-        cur = mysql.connection.cursor()
-        cur.execute("SELECT id FROM usuarios WHERE correo=%s", (correo,))
-        existente = cur.fetchone()
+        with mysql.connection.cursor() as cur:
+            cur.execute("SELECT id FROM usuarios WHERE correo=%s", (correo,))
+            existente = cur.fetchone()
 
-        if existente:
-            flash("El correo electrónico ya está registrado.", "warning")
-            return redirect(url_for("registro"))
+            if existente:
+                flash("El correo electrónico ya está registrado.", "warning")
+                return redirect(url_for("registro"))
 
-        cur.execute("INSERT INTO usuarios (nombre, correo, password, rol) VALUES (%s,%s,%s,%s)",
-                    (nombre, correo, hash_pass, "cliente"))
-        mysql.connection.commit()
+            cur.execute("INSERT INTO usuarios (nombre, correo, password, rol) VALUES (%s,%s,%s,%s)",
+                        (nombre, correo, hash_pass, "cliente"))
+            mysql.connection.commit()
         flash("Registro exitoso. Ahora puedes iniciar sesión.", "success")
         return redirect(url_for("index"))
 
     return render_template("register.html")
-
-
-
-#imagenes
-
-@app.route('/movimientos/subir_imagen/<int:id>', methods=['POST'])
-def subir_imagen(id):
-    if 'rol' not in session or session['rol'] != 'admin':
-        flash('No tienes permisos para realizar esta acción.', 'danger')
-        return redirect(url_for('movimientos'))
-
-    if 'imagen' not in request.files:
-        flash('No se seleccionó ningún archivo.', 'warning')
-        return redirect(url_for('movimientos'))
-
-    file = request.files['imagen']
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-
-        cur = mysql.connection.cursor()
-        cur.execute("UPDATE movimientos SET imagen = %s WHERE id = %s", (filename, id))
-        mysql.connection.commit()
-        cur.close()
-
-        flash('Imagen subida correctamente.', 'success')
-    else:
-        flash('Formato de archivo no permitido.', 'danger')
-
-    return redirect(url_for('movimientos'))
 
 
 # --- CRUD USUARIOS ---
@@ -177,17 +178,16 @@ def subir_imagen(id):
 @admin_required
 def usuarios():
     q = request.args.get("q", "").strip()
-    cur = mysql.connection.cursor()
-    if q:
-        cur.execute("""
-            SELECT id, nombre, correo, rol, fecha_registro 
-            FROM usuarios 
-            WHERE nombre LIKE %s OR correo LIKE %s OR rol LIKE %s
-        """, (f"%{q}%", f"%{q}%", f"%{q}%"))
-    else:
-        cur.execute("SELECT id, nombre, correo, rol, fecha_registro FROM usuarios")
-    usuarios_data = cur.fetchall()
-    cur.close()
+    with mysql.connection.cursor() as cur:
+        if q:
+            cur.execute("""
+                SELECT id, nombre, correo, rol, fecha_registro
+                FROM usuarios
+                WHERE nombre LIKE %s OR correo LIKE %s OR rol LIKE %s
+            """, (f"%{q}%", f"%{q}%", f"%{q}%"))
+        else:
+            cur.execute("SELECT id, nombre, correo, rol, fecha_registro FROM usuarios")
+        usuarios_data = cur.fetchall()
     return render_template("usuarios.html",
                            usuarios=usuarios_data,
                            rol=session["rol"],
@@ -202,10 +202,10 @@ def agregar_usuario():
     password = request.form["password"]
     rol = request.form["rol"]
     hash_pass = generate_password_hash(password)
-    cur = mysql.connection.cursor()
-    cur.execute("INSERT INTO usuarios (nombre, correo, password, rol) VALUES (%s,%s,%s,%s)",
-                (nombre, correo, hash_pass, rol))
-    mysql.connection.commit()
+    with mysql.connection.cursor() as cur:
+        cur.execute("INSERT INTO usuarios (nombre, correo, password, rol) VALUES (%s,%s,%s,%s)",
+                    (nombre, correo, hash_pass, rol))
+        mysql.connection.commit()
     flash("Usuario agregado correctamente", "success")
     return redirect(url_for("usuarios"))
 
@@ -215,30 +215,29 @@ def editar_usuario(id):
     nombre = request.form["nombre"]
     correo = request.form["correo"]
     rol = request.form["rol"]
-    cur = mysql.connection.cursor()
-    cur.execute("UPDATE usuarios SET nombre=%s, correo=%s, rol=%s WHERE id=%s",
-                (nombre, correo, rol, id))
-    mysql.connection.commit()
+    with mysql.connection.cursor() as cur:
+        cur.execute("UPDATE usuarios SET nombre=%s, correo=%s, rol=%s WHERE id=%s",
+                    (nombre, correo, rol, id))
+        mysql.connection.commit()
     flash("Usuario actualizado correctamente", "info")
     return redirect(url_for("usuarios"))
 
 @app.route("/usuarios/eliminar/<id>")
 @admin_required
 def eliminar_usuario(id):
-    cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM usuarios WHERE id=%s", (id,))
-    mysql.connection.commit()
+    with mysql.connection.cursor() as cur:
+        cur.execute("DELETE FROM usuarios WHERE id=%s", (id,))
+        mysql.connection.commit()
     flash("Usuario eliminado correctamente", "danger")
     return redirect(url_for("usuarios"))
 
 @app.route("/usuarios/reiniciar", methods=["POST"])
 @admin_required
 def reiniciar_usuarios():
-    cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM usuarios WHERE id > 1")
-    cur.execute("ALTER TABLE usuarios AUTO_INCREMENT = 2")
-    mysql.connection.commit()
-    cur.close()
+    with mysql.connection.cursor() as cur:
+        cur.execute("DELETE FROM usuarios WHERE id > 1")
+        cur.execute("ALTER TABLE usuarios AUTO_INCREMENT = 2")
+        mysql.connection.commit()
     flash("Tabla de usuarios reiniciada correctamente (el admin se conservó).", "danger")
     return redirect(url_for("usuarios"))
 
@@ -249,16 +248,15 @@ def reiniciar_usuarios():
 @admin_required
 def categorias():
     q = request.args.get("q", "").strip()
-    cur = mysql.connection.cursor()
-    if q:
-        cur.execute("""
-            SELECT id, nombre, descripcion FROM categorias
-            WHERE nombre LIKE %s OR descripcion LIKE %s
-        """, (f"%{q}%", f"%{q}%"))
-    else:
-        cur.execute("SELECT id, nombre, descripcion FROM categorias")
-    categorias_data = cur.fetchall()
-    cur.close()
+    with mysql.connection.cursor() as cur:
+        if q:
+            cur.execute("""
+                SELECT id, nombre, descripcion FROM categorias
+                WHERE nombre LIKE %s OR descripcion LIKE %s
+            """, (f"%{q}%", f"%{q}%"))
+        else:
+            cur.execute("SELECT id, nombre, descripcion FROM categorias")
+        categorias_data = cur.fetchall()
     return render_template("categorias.html",
                            categorias=categorias_data,
                            rol=session["rol"],
@@ -270,9 +268,9 @@ def categorias():
 def agregar_categoria():
     nombre = request.form["nombre"]
     descripcion = request.form["descripcion"]
-    cur = mysql.connection.cursor()
-    cur.execute("INSERT INTO categorias (nombre, descripcion) VALUES (%s,%s)", (nombre, descripcion))
-    mysql.connection.commit()
+    with mysql.connection.cursor() as cur:
+        cur.execute("INSERT INTO categorias (nombre, descripcion) VALUES (%s,%s)", (nombre, descripcion))
+        mysql.connection.commit()
     flash("Categoría agregada correctamente", "success")
     return redirect(url_for("categorias"))
 
@@ -281,30 +279,29 @@ def agregar_categoria():
 def editar_categoria(id):
     nombre = request.form["nombre"]
     descripcion = request.form["descripcion"]
-    cur = mysql.connection.cursor()
-    cur.execute("UPDATE categorias SET nombre=%s, descripcion=%s WHERE id=%s",
-                (nombre, descripcion, id))
-    mysql.connection.commit()
+    with mysql.connection.cursor() as cur:
+        cur.execute("UPDATE categorias SET nombre=%s, descripcion=%s WHERE id=%s",
+                    (nombre, descripcion, id))
+        mysql.connection.commit()
     flash("Categoría actualizada correctamente", "info")
     return redirect(url_for("categorias"))
 
 @app.route("/categorias/eliminar/<id>")
 @admin_required
 def eliminar_categoria(id):
-    cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM categorias WHERE id=%s", (id,))
-    mysql.connection.commit()
+    with mysql.connection.cursor() as cur:
+        cur.execute("DELETE FROM categorias WHERE id=%s", (id,))
+        mysql.connection.commit()
     flash("Categoría eliminada correctamente", "danger")
     return redirect(url_for("categorias"))
 
 @app.route("/categorias/reiniciar", methods=["POST"])
 @admin_required
 def reiniciar_categorias():
-    cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM categorias")
-    cur.execute("ALTER TABLE categorias AUTO_INCREMENT = 1")
-    mysql.connection.commit()
-    cur.close()
+    with mysql.connection.cursor() as cur:
+        cur.execute("DELETE FROM categorias")
+        cur.execute("ALTER TABLE categorias AUTO_INCREMENT = 1")
+        mysql.connection.commit()
     flash("Tabla de categorías reiniciada correctamente.", "danger")
     return redirect(url_for("categorias"))
 
@@ -314,26 +311,23 @@ def reiniciar_categorias():
 @login_required
 def productos():
     q = request.args.get("q", "").strip()
-    cur = mysql.connection.cursor()
-
-    if q:
-        cur.execute("""
-            SELECT p.id, p.nombre, p.descripcion, p.precio, p.stock, c.nombre, p.imagen
-            FROM productos p
-            LEFT JOIN categorias c ON p.id_categoria = c.id
-            WHERE p.nombre LIKE %s OR p.descripcion LIKE %s OR c.nombre LIKE %s
-        """, (f"%{q}%", f"%{q}%", f"%{q}%"))
-    else:
-        cur.execute("""
-            SELECT p.id, p.nombre, p.descripcion, p.precio, p.stock, c.nombre, p.imagen
-            FROM productos p
-            LEFT JOIN categorias c ON p.id_categoria = c.id
-        """)
-
-    productos_data = cur.fetchall()
-    cur.execute("SELECT id, nombre FROM categorias")
-    categorias = cur.fetchall()
-    cur.close()
+    with mysql.connection.cursor() as cur:
+        if q:
+            cur.execute("""
+                SELECT p.id, p.nombre, p.descripcion, p.precio, p.stock, c.nombre, p.imagen
+                FROM productos p
+                LEFT JOIN categorias c ON p.id_categoria = c.id
+                WHERE p.nombre LIKE %s OR p.descripcion LIKE %s OR c.nombre LIKE %s
+            """, (f"%{q}%", f"%{q}%", f"%{q}%"))
+        else:
+            cur.execute("""
+                SELECT p.id, p.nombre, p.descripcion, p.precio, p.stock, c.nombre, p.imagen
+                FROM productos p
+                LEFT JOIN categorias c ON p.id_categoria = c.id
+            """)
+        productos_data = cur.fetchall()
+        cur.execute("SELECT id, nombre FROM categorias")
+        categorias = cur.fetchall()
 
     return render_template("productos.html",
                            productos=productos_data,
@@ -360,12 +354,12 @@ def agregar_producto():
         filename = secure_filename(imagen.filename)
         imagen.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
 
-    cur = mysql.connection.cursor()
-    cur.execute("""
-        INSERT INTO productos (nombre, descripcion, precio, stock, id_categoria, imagen)
-        VALUES (%s,%s,%s,%s,%s,%s)
-    """, (nombre, descripcion, precio, stock, id_categoria, filename))
-    mysql.connection.commit()
+    with mysql.connection.cursor() as cur:
+        cur.execute("""
+            INSERT INTO productos (nombre, descripcion, precio, stock, id_categoria, imagen)
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (nombre, descripcion, precio, stock, id_categoria, filename))
+        mysql.connection.commit()
     flash("Producto agregado correctamente", "success")
     return redirect(url_for("productos"))
 
@@ -382,48 +376,46 @@ def editar_producto(id):
     imagen = request.files.get("imagen")
     filename = None
 
-    if imagen and allowed_file(imagen.filename):
-        filename = secure_filename(imagen.filename)
-        imagen.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-        query = """
-            UPDATE productos
-            SET nombre=%s, descripcion=%s, precio=%s, stock=%s, id_categoria=%s, imagen=%s
-            WHERE id=%s
-        """
-        values = (nombre, descripcion, precio, stock, id_categoria, filename, id)
-    else:
-        query = """
-            UPDATE productos
-            SET nombre=%s, descripcion=%s, precio=%s, stock=%s, id_categoria=%s
-            WHERE id=%s
-        """
-        values = (nombre, descripcion, precio, stock, id_categoria, id)
-
-    cur = mysql.connection.cursor()
-    cur.execute(query, values)
-    mysql.connection.commit()
+    with mysql.connection.cursor() as cur:
+        if imagen and allowed_file(imagen.filename):
+            filename = secure_filename(imagen.filename)
+            imagen.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            query = """
+                UPDATE productos
+                SET nombre=%s, descripcion=%s, precio=%s, stock=%s, id_categoria=%s, imagen=%s
+                WHERE id=%s
+            """
+            values = (nombre, descripcion, precio, stock, id_categoria, filename, id)
+        else:
+            query = """
+                UPDATE productos
+                SET nombre=%s, descripcion=%s, precio=%s, stock=%s, id_categoria=%s
+                WHERE id=%s
+            """
+            values = (nombre, descripcion, precio, stock, id_categoria, id)
+        cur.execute(query, values)
+        mysql.connection.commit()
     flash("Producto actualizado correctamente", "info")
     return redirect(url_for("productos"))
 
 @app.route("/productos/eliminar/<id>")
 @admin_required
 def eliminar_producto(id):
-    cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM productos WHERE id=%s", (id,))
-    mysql.connection.commit()
+    with mysql.connection.cursor() as cur:
+        cur.execute("DELETE FROM productos WHERE id=%s", (id,))
+        mysql.connection.commit()
     flash("Producto eliminado correctamente", "danger")
     return redirect(url_for("productos"))
 
 @app.route("/productos/reiniciar", methods=["POST"])
 @admin_required
 def reiniciar_productos():
-    cur = mysql.connection.cursor()
-    # Borrar todos los productos
-    cur.execute("DELETE FROM productos")
-    # Reiniciar el contador de auto_increment
-    cur.execute("ALTER TABLE productos AUTO_INCREMENT = 1")
-    mysql.connection.commit()
-    cur.close()
+    with mysql.connection.cursor() as cur:
+        # Borrar todos los productos
+        cur.execute("DELETE FROM productos")
+        # Reiniciar el contador de auto_increment
+        cur.execute("ALTER TABLE productos AUTO_INCREMENT = 1")
+        mysql.connection.commit()
     flash("Tabla de productos reiniciada correctamente.", "danger")
     return redirect(url_for("productos"))
 
@@ -433,29 +425,28 @@ def reiniciar_productos():
 @login_required
 def movimientos():
     q = request.args.get("q", "").strip()
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT id, nombre FROM productos")
-    productos = cur.fetchall()
+    with mysql.connection.cursor() as cur:
+        cur.execute("SELECT id, nombre FROM productos")
+        productos = cur.fetchall()
 
-    if q:
-        cur.execute("""
-            SELECT m.id, m.tipo, m.cantidad, p.nombre, u.nombre, m.fecha
-            FROM movimientos m
-            LEFT JOIN productos p ON m.id_producto = p.id
-            LEFT JOIN usuarios u ON m.id_usuario = u.id
-            WHERE p.nombre LIKE %s OR u.nombre LIKE %s OR m.tipo LIKE %s
-            ORDER BY m.fecha DESC
-        """, (f"%{q}%", f"%{q}%", f"%{q}%"))
-    else:
-        cur.execute("""
-            SELECT m.id, m.tipo, m.cantidad, p.nombre, u.nombre, m.fecha
-            FROM movimientos m
-            LEFT JOIN productos p ON m.id_producto = p.id
-            LEFT JOIN usuarios u ON m.id_usuario = u.id
-            ORDER BY m.fecha DESC
-        """)
-    movimientos_data = cur.fetchall()
-    cur.close()
+        if q:
+            cur.execute("""
+                SELECT m.id, m.tipo, m.cantidad, p.nombre, u.nombre, m.fecha
+                FROM movimientos m
+                LEFT JOIN productos p ON m.id_producto = p.id
+                LEFT JOIN usuarios u ON m.id_usuario = u.id
+                WHERE p.nombre LIKE %s OR u.nombre LIKE %s OR m.tipo LIKE %s
+                ORDER BY m.fecha DESC
+            """, (f"%{q}%", f"%{q}%", f"%{q}%"))
+        else:
+            cur.execute("""
+                SELECT m.id, m.tipo, m.cantidad, p.nombre, u.nombre, m.fecha
+                FROM movimientos m
+                LEFT JOIN productos p ON m.id_producto = p.id
+                LEFT JOIN usuarios u ON m.id_usuario = u.id
+                ORDER BY m.fecha DESC
+            """)
+        movimientos_data = cur.fetchall()
     return render_template("movimientos.html",
                            movimientos=movimientos_data,
                            productos=productos,
@@ -471,64 +462,66 @@ def agregar_movimiento():
     id_producto = request.form["id_producto"]
     id_usuario = session["id"]
 
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT stock FROM productos WHERE id=%s", (id_producto,))
-    stock_actual_tuple = cur.fetchone()
+    with mysql.connection.cursor() as cur:
+        cur.execute("SELECT stock FROM productos WHERE id=%s", (id_producto,))
+        stock_actual_tuple = cur.fetchone()
 
-    if not stock_actual_tuple:
-        flash("El producto seleccionado no existe.", "danger")
-        return redirect(url_for("movimientos"))
+        if not stock_actual_tuple:
+            flash("El producto seleccionado no existe.", "danger")
+            return redirect(url_for("movimientos"))
 
-    stock_actual = stock_actual_tuple[0]
-    nuevo_stock = stock_actual + cantidad if tipo == "entrada" else stock_actual - cantidad
+        stock_actual = stock_actual_tuple[0]
+        nuevo_stock = stock_actual + cantidad if tipo == "entrada" else stock_actual - cantidad
 
-    if nuevo_stock < 0:
-        flash("No hay suficiente stock para realizar la salida.", "danger")
-        return redirect(url_for("movimientos"))
+        if nuevo_stock < 0:
+            flash("No hay suficiente stock para realizar la salida.", "danger")
+            return redirect(url_for("movimientos"))
 
-    cur.execute("INSERT INTO movimientos (tipo, cantidad, id_producto, id_usuario) VALUES (%s,%s,%s,%s)",
-                (tipo, cantidad, id_producto, id_usuario))
-    cur.execute("UPDATE productos SET stock=%s WHERE id=%s", (nuevo_stock, id_producto))
-    mysql.connection.commit()
+        cur.execute("INSERT INTO movimientos (tipo, cantidad, id_producto, id_usuario) VALUES (%s,%s,%s,%s)",
+                    (tipo, cantidad, id_producto, id_usuario))
+        cur.execute("UPDATE productos SET stock=%s WHERE id=%s", (nuevo_stock, id_producto))
+        mysql.connection.commit()
     flash("Movimiento registrado correctamente", "success")
     return redirect(url_for("movimientos"))
 
 @app.route('/movimientos/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
 def editar_movimiento(id):
-    cur = mysql.connection.cursor()
-    if request.method == 'POST':
-        tipo = request.form['tipo']
-        cantidad = request.form['cantidad']
-        cur.execute("UPDATE movimientos SET tipo=%s, cantidad=%s WHERE id=%s", (tipo, cantidad, id))
-        mysql.connection.commit()
-        flash('Movimiento actualizado correctamente.', 'success')
-        return redirect(url_for('movimientos'))
-    else:
-        cur.execute("SELECT * FROM movimientos WHERE id=%s", (id,))
-        movimiento = cur.fetchone()
-        cur.close()
-        return render_template('editar_movimiento.html', movimiento=movimiento)
+    with mysql.connection.cursor() as cur:
+        if request.method == 'POST':
+            tipo = request.form['tipo']
+            cantidad = int(request.form['cantidad'])
+            # En una versión más completa, se debería recalcular el stock del producto aquí
+            cur.execute("UPDATE movimientos SET tipo=%s, cantidad=%s WHERE id=%s", (tipo, cantidad, id))
+            mysql.connection.commit()
+            flash('Movimiento actualizado correctamente.', 'success')
+            return redirect(url_for('movimientos'))
+        else:
+            cur.execute("SELECT * FROM movimientos WHERE id=%s", (id,))
+            movimiento = cur.fetchone()
+            return render_template('editar_movimiento.html', movimiento=movimiento)
 
 
 @app.route('/movimientos/eliminar/<int:id>', methods=['POST'])
+@login_required
+@admin_required
 def eliminar_movimiento(id):
-    cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM movimientos WHERE id=%s", (id,))
-    mysql.connection.commit()
-    cur.close()
+    with mysql.connection.cursor() as cur:
+        cur.execute("DELETE FROM movimientos WHERE id=%s", (id,))
+        mysql.connection.commit()
     flash('Movimiento eliminado correctamente.', 'success')
     return redirect(url_for('movimientos'))
 
 @app.route("/movimientos/reiniciar", methods=["POST"])
 @admin_required
 def reiniciar_movimientos():
-    cur = mysql.connection.cursor()
-    # Eliminar todos los registros
-    cur.execute("DELETE FROM movimientos")
-    # Reiniciar el contador AUTO_INCREMENT a 1
-    cur.execute("ALTER TABLE movimientos AUTO_INCREMENT = 1")
-    mysql.connection.commit()
-    cur.close()
+    with mysql.connection.cursor() as cur:
+        # Eliminar todos los registros
+        cur.execute("DELETE FROM movimientos")
+        # Reiniciar el contador AUTO_INCREMENT a 1
+        cur.execute("ALTER TABLE movimientos AUTO_INCREMENT = 1")
+        mysql.connection.commit()
     flash("Tabla de movimientos reiniciada correctamente.", "danger")
     return redirect(url_for("movimientos"))
 
@@ -567,38 +560,35 @@ def generar_pdf(titulo, columnas, datos):
 @app.route("/reporte/usuarios")
 @admin_required
 def reporte_usuarios():
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT id, nombre, correo, rol, fecha_registro FROM usuarios")
-    datos = cur.fetchall()
-    cur.close()
+    with mysql.connection.cursor() as cur:
+        cur.execute("SELECT id, nombre, correo, rol, fecha_registro FROM usuarios")
+        datos = cur.fetchall()
     return generar_pdf("Reporte de Usuarios", ["ID", "Nombre", "Correo", "Rol", "Fecha"], datos)
 
 @app.route("/reporte/productos")
 @admin_required
 def reporte_productos():
-    cur = mysql.connection.cursor()
-    cur.execute("""
-        SELECT p.id, p.nombre, c.nombre AS categoria, p.precio, p.stock
-        FROM productos p
-        LEFT JOIN categorias c ON p.id_categoria = c.id
-    """)
-    datos = cur.fetchall()
-    cur.close()
+    with mysql.connection.cursor() as cur:
+        cur.execute("""
+            SELECT p.id, p.nombre, c.nombre AS categoria, p.precio, p.stock
+            FROM productos p
+            LEFT JOIN categorias c ON p.id_categoria = c.id
+        """)
+        datos = cur.fetchall()
     return generar_pdf("Reporte de Productos", ["ID", "Nombre", "Categoría", "Precio", "Stock"], datos)
 
 @app.route("/reporte/movimientos")
 @admin_required
 def reporte_movimientos():
-    cur = mysql.connection.cursor()
-    cur.execute("""
-        SELECT m.id, m.tipo, m.cantidad, p.nombre, u.nombre, m.fecha
-        FROM movimientos m
-        LEFT JOIN productos p ON m.id_producto = p.id
-        LEFT JOIN usuarios u ON m.id_usuario = u.id
-        ORDER BY m.fecha DESC
-    """)
-    datos = cur.fetchall()
-    cur.close()
+    with mysql.connection.cursor() as cur:
+        cur.execute("""
+            SELECT m.id, m.tipo, m.cantidad, p.nombre, u.nombre, m.fecha
+            FROM movimientos m
+            LEFT JOIN productos p ON m.id_producto = p.id
+            LEFT JOIN usuarios u ON m.id_usuario = u.id
+            ORDER BY m.fecha DESC
+        """)
+        datos = cur.fetchall()
     return generar_pdf("Reporte de Movimientos", ["ID", "Tipo", "Cantidad", "Producto", "Usuario", "Fecha"], datos)
 
 # --- MAIN ---
