@@ -3,237 +3,120 @@
 {% block page_title %}Gestión de Productos{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm">
-    <div class="card-body">
-
-        <!-- 🔍 Barra de búsqueda -->
-        <form method="GET" action="{{ url_for('productos') }}" class="d-flex mb-3">
-            <input type="text" name="q" class="form-control me-2" placeholder="Buscar productos, descripción o categoría..." value="{{ busqueda or '' }}">
-            <button type="submit" class="btn btn-primary">
-                <i class="bi bi-search"></i> Buscar
-            </button>
-            {% if busqueda %}
-                <a href="{{ url_for('productos') }}" class="btn btn-outline-secondary ms-2">Limpiar</a>
-            {% endif %}
-        </form>
-
-        {% if rol == 'admin' %}
-        <div class="d-flex justify-content-between mb-3 align-items-center">
-            <div>
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+        <div class="row align-items-center g-3">
+            <div class="col-md-6">
+                <form method="GET" action="{{ url_for('productos') }}" class="d-flex">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="q" class="form-control border-start-0" placeholder="Buscar productos..." value="{{ busqueda or '' }}">
+                        <button type="submit" class="btn btn-primary px-4">Buscar</button>
+                    </div>
+                    {% if busqueda %}
+                        <a href="{{ url_for('productos') }}" class="btn btn-link text-decoration-none">Limpiar</a>
+                    {% endif %}
+                </form>
+            </div>
+            <div class="col-md-6 text-md-end">
+                {% if rol == 'admin' %}
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAgregar">
-                    <i class="bi bi-plus-circle-fill"></i> Nuevo producto
+                    <i class="bi bi-plus-lg me-1"></i> Nuevo Producto
                 </button>
                 <a href="{{ url_for('reporte_productos') }}" class="btn btn-success ms-2">
-                    <i class="bi bi-printer-fill"></i> Imprimir
+                    <i class="bi bi-file-earmark-pdf me-1"></i> PDF
                 </a>
-            </div>
-
-            <!-- 🧨 Botón reiniciar tabla -->
-            <form action="{{ url_for('reiniciar_productos') }}" method="POST"
-                  onsubmit="return confirm('⚠️ ¿Seguro que deseas reiniciar la tabla de productos? Esto eliminará todos los registros y reiniciará el contador a 1.');">
-                <button type="submit" class="btn btn-danger">
-                    <i class="bi bi-arrow-counterclockwise"></i> Reiniciar tabla
+                <button class="btn btn-outline-danger ms-2" data-bs-toggle="modal" data-bs-target="#modalReiniciar">
+                    <i class="bi bi-arrow-counterclockwise"></i>
                 </button>
-            </form>
+                {% endif %}
+            </div>
         </div>
-        {% endif %}
-
-        {% if productos %}
-        <div class="table-responsive">
-            <table class="table table-hover align-middle text-center">
-                <thead class="table-dark">
-                    <tr>
-                        <th>ID</th>
-                        <th>Imagen</th>
-                        <th>Nombre</th>
-                        <th>Categoría</th>
-                        <th>Precio</th>
-                        <th>Stock</th>
-                        {% if rol == 'admin' %}
-                        <th>Acciones</th>
-                        {% endif %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for p in productos %}
-                    <tr>
-                        <td>{{ p[0] }}</td>
-
-                        <!-- Imagen clicable -->
-                        <td>
-                            {% if p[6] %}
-                                <img src="{{ url_for('static', filename='uploads/' ~ p[6]) }}"
-                                     alt="imagen" width="70" height="70" class="rounded shadow-sm"
-                                     style="cursor:pointer;"
-                                     data-bs-toggle="modal" data-bs-target="#modalVista{{ p[0] }}">
-                            {% else %}
-                                <span class="text-muted">Sin imagen</span>
-                            {% endif %}
-                        </td>
-
-                        <!-- Nombre clicable -->
-                        <td style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#modalVista{{ p[0] }}">
-                            {{ p[1] }}
-                        </td>
-
-                        <td>{{ p[5] or 'Sin categoría' }}</td>
-                        <td>${{ "%.2f"|format(p[3]) }}</td>
-                        <td>{{ p[4] }}</td>
-
-                        {% if rol == 'admin' %}
-                        <td>
-                            <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalEditar{{ p[0] }}">
-                                <i class="bi bi-pencil-fill"></i>
-                            </button>
-                            <a href="{{ url_for('eliminar_producto', id=p[0]) }}" class="btn btn-danger btn-sm"
-                               onclick="return confirm('¿Seguro que deseas eliminar este producto?')">
-                                <i class="bi bi-trash-fill"></i>
-                            </a>
-                        </td>
-                        {% endif %}
-                    </tr>
-
-                    <!-- Modal Editar Producto -->
-                    <div class="modal fade" id="modalEditar{{ p[0] }}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <form action="{{ url_for('editar_producto', id=p[0]) }}" method="POST" enctype="multipart/form-data">
-                                    <div class="modal-header bg-warning text-white">
-                                        <h5 class="modal-title">Editar Producto</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="mb-3">
-                                            <label class="form-label">Nombre</label>
-                                            <input type="text" name="nombre" class="form-control" value="{{ p[1] }}" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Descripción</label>
-                                            <textarea name="descripcion" class="form-control">{{ p[2] }}</textarea>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Precio</label>
-                                            <input type="number" step="0.01" name="precio" class="form-control" value="{{ p[3] }}" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Stock</label>
-                                            <input type="number" name="stock" class="form-control" value="{{ p[4] }}" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Categoría</label>
-                                            <select name="id_categoria" class="form-select" required>
-                                                {% for c in categorias %}
-                                                    <option value="{{ c[0] }}" {% if c[1] == p[5] %}selected{% endif %}>{{ c[1] }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <div class="mb-3 text-center">
-                                            <label class="form-label">Imagen actual</label><br>
-                                            {% if p[6] %}
-                                                <img src="{{ url_for('static', filename='uploads/' ~ p[6]) }}" width="100" class="rounded mb-2">
-                                            {% else %}
-                                                <p class="text-muted">Sin imagen</p>
-                                            {% endif %}
-                                            <input type="file" name="imagen" class="form-control mt-2" accept="image/*" onchange="previewImage(event, 'preview{{p[0]}}')">
-                                            <img id="preview{{p[0]}}" src="#" alt="" class="img-fluid mt-2" style="display:none; max-height:120px;">
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="submit" class="btn btn-warning">Guardar cambios</button>
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 🔍 Modal de vista previa -->
-                    <div class="modal fade" id="modalVista{{ p[0] }}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered modal-lg">
-                            <div class="modal-content border-0 shadow-lg">
-                                <div class="modal-header bg-dark text-white">
-                                    <h5 class="modal-title">{{ p[1] }}</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body text-center">
-                                    {% if p[6] %}
-                                        <img src="{{ url_for('static', filename='uploads/' ~ p[6]) }}" 
-                                             class="img-fluid rounded mb-3 shadow-sm"
-                                             style="max-height:400px;">
-                                    {% else %}
-                                        <p class="text-muted">Sin imagen disponible</p>
-                                    {% endif %}
-                                    <p class="mt-3"><strong>Descripción:</strong> {{ p[2] or 'Sin descripción' }}</p>
-                                    <p><strong>Precio:</strong> ${{ "%.2f"|format(p[3]) }}</p>
-                                    <p><strong>Stock:</strong> {{ p[4] }}</p>
-                                    <p><strong>Categoría:</strong> {{ p[5] or 'Sin categoría' }}</p>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="alert alert-info text-center">No hay productos registrados.</div>
-        {% endif %}
     </div>
 </div>
 
-<!-- Modal Agregar Producto -->
+{% if productos %}
+<div class="card shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">Producto</th>
+                    <th>Categoría</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th class="text-end pe-4">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in productos %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0 me-3">
+                                {% if p[6] %}
+                                    <img src="{{ url_for('static', filename='uploads/' ~ p[6]) }}" class="rounded shadow-sm" width="48" height="48" style="object-fit: cover; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#modalVista{{ p[0] }}">
+                                {% else %}
+                                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                        <i class="bi bi-image text-muted"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark">{{ p[1] }}</div>
+                                <small class="text-muted d-block text-truncate" style="max-width: 200px;">{{ p[2] or 'Sin descripción' }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">{{ p[5] or 'N/A' }}</span></td>
+                    <td class="fw-bold text-dark">${{ "%.2f"|format(p[3]) }}</td>
+                    <td>
+                        {% if p[4] < 10 %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                <i class="bi bi-exclamation-circle me-1"></i>{{ p[4] }} (Bajo)
+                            </span>
+                        {% else %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                {{ p[4] }}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                        <button class="btn btn-light btn-sm rounded-pill px-3 me-1" data-bs-toggle="modal" data-bs-target="#modalVista{{ p[0] }}">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        {% if rol == 'admin' %}
+                        <button class="btn btn-light btn-sm rounded-pill px-3 me-1 text-warning" data-bs-toggle="modal" data-bs-target="#modalEditar{{ p[0] }}">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <a href="{{ url_for('eliminar_producto', id=p[0]) }}" class="btn btn-light btn-sm rounded-pill px-3 text-danger" onclick="return confirm('¿Seguro que deseas eliminar este producto?')">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+
+                <!-- Modals (Editar, Vista) for each product -->
+                {% include 'partials/_modals_producto.html' %}
+
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="card shadow-sm border-0 py-5 text-center">
+    <div class="card-body">
+        <i class="bi bi-search text-muted display-1"></i>
+        <h4 class="mt-4 text-dark">No se encontraron productos</h4>
+        <p class="text-muted">Intenta con otros términos de búsqueda o agrega un nuevo producto.</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal Agregar, Reiniciar -->
 {% if rol == 'admin' %}
-<div class="modal fade" id="modalAgregar" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form action="{{ url_for('agregar_producto') }}" method="POST" enctype="multipart/form-data">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">Agregar Producto</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Nombre</label>
-                        <input type="text" name="nombre" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Descripción</label>
-                        <textarea name="descripcion" class="form-control"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Precio</label>
-                        <input type="number" step="0.01" name="precio" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Stock</label>
-                        <input type="number" name="stock" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Categoría</label>
-                        <select name="id_categoria" class="form-select" required>
-                            {% for c in categorias %}
-                                <option value="{{ c[0] }}">{{ c[1] }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Imagen</label>
-                        <input type="file" name="imagen" class="form-control" accept="image/*" onchange="previewImage(event, 'previewAdd')">
-                        <img id="previewAdd" src="#" alt="" class="img-fluid mt-2" style="display:none; max-height:120px;">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Guardar</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+    {% include 'partials/_modals_producto_admin.html' %}
 {% endif %}
 
 <script>
@@ -244,4 +127,3 @@ function previewImage(event, id) {
 }
 </script>
 {% endblock %}
-

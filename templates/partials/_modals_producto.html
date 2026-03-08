@@ -1,0 +1,89 @@
+<!-- Modal Editar Producto -->
+{% if rol == 'admin' %}
+<div class="modal fade" id="modalEditar{{ p[0] }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <form action="{{ url_for('editar_producto', id=p[0]) }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title fw-bold">Editar Producto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre</label>
+                        <input type="text" name="nombre" class="form-control bg-light" value="{{ p[1] }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Descripción</label>
+                        <textarea name="descripcion" class="form-control bg-light">{{ p[2] }}</textarea>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Precio ($)</label>
+                            <input type="number" step="0.01" name="precio" class="form-control bg-light" value="{{ p[3] }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Stock</label>
+                            <input type="number" name="stock" class="form-control bg-light" value="{{ p[4] }}" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Categoría</label>
+                        <select name="id_categoria" class="form-select bg-light" required>
+                            {% for c in categorias %}
+                                <option value="{{ c[0] }}" {% if c[1] == p[5] %}selected{% endif %}>{{ c[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Cambiar Imagen</label>
+                        <input type="file" name="imagen" class="form-control" accept="image/*" onchange="previewImage(event, 'preview{{p[0]}}')">
+                        <img id="preview{{p[0]}}" src="#" alt="" class="img-fluid rounded mt-2 shadow-sm" style="display:none; max-height:120px;">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning fw-bold text-dark px-4">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal Vista Previa -->
+<div class="modal fade" id="modalVista{{ p[0] }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg overflow-hidden">
+            <div class="position-relative">
+                {% if p[6] %}
+                    <img src="{{ url_for('static', filename='uploads/' ~ p[6]) }}" class="w-100" style="height: 300px; object-fit: cover;">
+                {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center text-muted" style="height: 300px;">
+                        <i class="bi bi-image display-1"></i>
+                    </div>
+                {% endif %}
+                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3 shadow-sm bg-dark p-2 rounded-circle" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h4 class="fw-bold m-0">{{ p[1] }}</h4>
+                        <span class="badge bg-light text-primary border border-primary-subtle mt-1 px-3">{{ p[5] or 'N/A' }}</span>
+                    </div>
+                    <div class="text-end">
+                        <span class="fs-4 fw-bold text-success d-block">${{ "%.2f"|format(p[3]) }}</span>
+                        <span class="badge {% if p[4] < 10 %}bg-danger{% else %}bg-success{% endif %} rounded-pill">
+                            Stock: {{ p[4] }}
+                        </span>
+                    </div>
+                </div>
+                <h6 class="fw-bold text-dark mb-2">Descripción</h6>
+                <p class="text-muted">{{ p[2] or 'Sin descripción proporcionada.' }}</p>
+                <div class="d-grid mt-4">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
