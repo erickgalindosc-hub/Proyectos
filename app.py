@@ -7,6 +7,55 @@ from reportlab.pdfgen import canvas
 from io import BytesIO
 
 import os
+
+# --- Traducciones Básicas ---
+TRANSLATIONS = {
+    'es': {
+        'dashboard': 'Dashboard',
+        'products': 'Productos',
+        'movements': 'Movimientos',
+        'categories': 'Categorías',
+        'users': 'Usuarios',
+        'settings': 'Configuración',
+        'administration': 'Administración',
+        'account': 'Cuenta',
+        'logout': 'Cerrar sesión',
+        'login': 'Iniciar sesión',
+        'main_panel': 'Panel Principal',
+        'save_changes': 'Guardar Cambios',
+        'visual_theme': 'Tema visual',
+        'language': 'Idioma',
+        'full_name': 'Nombre Completo',
+        'email': 'Correo Electrónico',
+        'light': 'Claro',
+        'dark': 'Oscuro'
+    },
+    'en': {
+        'dashboard': 'Dashboard',
+        'products': 'Products',
+        'movements': 'Movements',
+        'categories': 'Categories',
+        'users': 'Users',
+        'settings': 'Settings',
+        'administration': 'Administration',
+        'account': 'Account',
+        'logout': 'Logout',
+        'login': 'Login',
+        'main_panel': 'Main Panel',
+        'save_changes': 'Save Changes',
+        'visual_theme': 'Visual Theme',
+        'language': 'Language',
+        'full_name': 'Full Name',
+        'email': 'Email',
+        'light': 'Light',
+        'dark': 'Dark'
+    }
+}
+
+@app.context_processor
+def inject_translations():
+    lang = session.get('idioma', 'es')
+    return {'t': TRANSLATIONS.get(lang, TRANSLATIONS['es'])}
 from werkzeug.utils import secure_filename
 app = Flask(__name__)
 
@@ -53,8 +102,25 @@ def create_admin():
         print("🟢 Usuario administrador ya existente.")
     cur.close()
 
+# --- Migración de Base de Datos ---
+def migrate_db():
+    cur = mysql.connection.cursor()
+    # Verificar si la columna 'tema' existe
+    cur.execute("SHOW COLUMNS FROM usuarios LIKE 'tema'")
+    if not cur.fetchone():
+        cur.execute("ALTER TABLE usuarios ADD COLUMN tema VARCHAR(20) DEFAULT 'light'")
+
+    # Verificar si la columna 'idioma' existe
+    cur.execute("SHOW COLUMNS FROM usuarios LIKE 'idioma'")
+    if not cur.fetchone():
+        cur.execute("ALTER TABLE usuarios ADD COLUMN idioma VARCHAR(20) DEFAULT 'es'")
+
+    mysql.connection.commit()
+    cur.close()
+
 with app.app_context():
     create_admin()
+    migrate_db()
 
 # --- Decoradores ---
 def login_required(f):
@@ -91,7 +157,7 @@ def login():
         return redirect(url_for("index"))
 
     cur = mysql.connection.cursor()
-    cur.execute("SELECT id, nombre, password, rol FROM usuarios WHERE correo=%s", (correo,))
+    cur.execute("SELECT id, nombre, password, rol, tema, idioma FROM usuarios WHERE correo=%s", (correo,))
     user = cur.fetchone()
     cur.close()
 
@@ -99,6 +165,8 @@ def login():
         session["id"] = user[0]
         session["usuario"] = user[1]
         session["rol"] = user[3]
+        session["tema"] = user[4] if user[4] else 'light'
+        session["idioma"] = user[5] if user[5] else 'es'
         flash("Inicio de sesión exitoso", "success")
         return redirect(url_for("dashboard"))
     else:
@@ -175,7 +243,52 @@ def registro():
     return render_template("register.html")
 
 
+# --- Configuración ---
+@app.route("/configuracion", methods=["GET", "POST"])
+@login_required
+def configuracion():
+    if request.method == "POST":
+        nombre = request.form.get("nombre")
+        correo = request.form.get("correo")
+        tema = request.form.get("tema")
+        idioma = request.form.get("idioma")
+        id_usuario = session["id"]
 
+        cur = mysql.connection.cursor()
+        # Verificar si el correo ya existe para otro usuario
+        cur.execute("SELECT id FROM usuarios WHERE correo=%s AND id!=%s", (correo, id_usuario))
+        existente = cur.fetchone()
+
+        if existente:
+            flash("El correo electrónico ya está en uso por otro usuario.", "warning")
+            return redirect(url_for("configuracion"))
+
+        cur.execute("""
+            UPDATE usuarios
+            SET nombre=%s, correo=%s, tema=%s, idioma=%s
+            WHERE id=%s
+        """, (nombre, correo, tema, idioma, id_usuario))
+        mysql.connection.commit()
+        cur.close()
+
+        # Actualizar sesión
+        session["usuario"] = nombre
+        session["tema"] = tema
+        session["idioma"] = idioma
+
+        flash("Configuración actualizada correctamente.", "success")
+        return redirect(url_for("configuracion"))
+
+    # GET: Obtener datos actuales del usuario
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT nombre, correo, tema, idioma FROM usuarios WHERE id=%s", (session["id"],))
+    user_data = cur.fetchone()
+    cur.close()
+
+    return render_template("configuracion.html",
+                           user_data=user_data,
+                           rol=session["rol"],
+                           usuario=session["usuario"])
 
 
 # --- CRUD USUARIOS ---
