@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}{{ t.settings }} - Papelería LyM{% endblock %}
+{% block page_title %}{{ t.settings }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 fw-bold">
+                    <i class="bi bi-gear me-2"></i>{{ t.account }}
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form action="{{ url_for('configuracion') }}" method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="nombre" class="form-label fw-bold">{{ t.full_name }}</label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" value="{{ user_data[0] }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="correo" class="form-label fw-bold">{{ t.email }}</label>
+                            <input type="email" class="form-control" id="correo" name="correo" value="{{ user_data[1] }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="tema" class="form-label fw-bold">{{ t.visual_theme }}</label>
+                            <select class="form-select" id="tema" name="tema">
+                                <option value="light" {% if user_data[2] == 'light' %}selected{% endif %}>{{ t.light }}</option>
+                                <option value="dark" {% if user_data[2] == 'dark' %}selected{% endif %}>{{ t.dark }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="idioma" class="form-label fw-bold">{{ t.language }}</label>
+                            <select class="form-select" id="idioma" name="idioma">
+                                <option value="es" {% if user_data[3] == 'es' %}selected{% endif %}>Español</option>
+                                <option value="en" {% if user_data[3] == 'en' %}selected{% endif %}>English</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-save me-2"></i>{{ t.save_changes }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mt-4 border-start border-4 border-info">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="fs-1 text-info me-3">
+                        <i class="bi bi-info-circle"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold">Sobre las preferencias</h6>
+                        <p class="text-muted mb-0 small">
+                            Estas configuraciones se aplican a tu cuenta de usuario y se sincronizarán en cualquier dispositivo desde el que inicies sesión.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
