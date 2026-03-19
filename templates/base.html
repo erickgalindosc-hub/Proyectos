@@ -18,6 +18,7 @@
             background-color: var(--light-bg);
             display: flex;
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
         }
         .sidebar {
             width: var(--sidebar-width);
@@ -103,9 +104,46 @@
                 transform: translateX(0);
             }
         }
+
+        /* Tema Oscuro */
+        body.dark-theme {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        .dark-theme .top-navbar, 
+        .dark-theme .card,
+        .dark-theme .table-light,
+        .dark-theme .card-header,
+        .dark-theme .card-footer {
+            background-color: #1e1e1e !important;
+            color: #e0e0e0 !important;
+            border-color: #333 !important;
+        }
+        .dark-theme .text-muted {
+            color: #aaa !important;
+        }
+        .dark-theme .table {
+            color: #e0e0e0;
+            border-color: #333;
+        }
+        .dark-theme .form-control,
+        .dark-theme .form-select {
+            background-color: #2c2c2c;
+            border-color: #444;
+            color: #fff;
+        }
+        .dark-theme .form-control:focus,
+        .dark-theme .form-select:focus {
+            background-color: #333;
+            color: #fff;
+        }
+        .dark-theme .alert {
+            background-color: #2c2c2c;
+            border-color: #444;
+        }
     </style>
 </head>
-<body>
+<body class="{{ session.get('tema', 'light') }}-theme">
     <!-- Menú lateral -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -119,28 +157,33 @@
         <nav class="mt-4">
             {% if usuario %}
                 <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">
-                    <i class="bi bi-speedometer2 me-3 fs-5"></i> Dashboard
+                    <i class="bi bi-speedometer2 me-3 fs-5"></i> {{ t.dashboard }}
                 </a>
                 
                 <a href="{{ url_for('productos') }}" class="{% if request.endpoint == 'productos' %}active{% endif %}">
-                    <i class="bi bi-box-seam me-3 fs-5"></i> Productos
+                    <i class="bi bi-box-seam me-3 fs-5"></i> {{ t.products }}
                 </a>
                 
                 <a href="{{ url_for('movimientos') }}" class="{% if request.endpoint == 'movimientos' %}active{% endif %}">
-                    <i class="bi bi-arrow-left-right me-3 fs-5"></i> Movimientos
+                    <i class="bi bi-arrow-left-right me-3 fs-5"></i> {{ t.movements }}
                 </a>
 
                 {% if rol == 'admin' %}
-                    <div class="px-4 py-2 mt-3 mb-1 text-white-50 small text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 1px;">Administración</div>
+                    <div class="px-4 py-2 mt-3 mb-1 text-white-50 small text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 1px;">{{ t.administration }}</div>
                     
                     <a href="{{ url_for('categorias') }}" class="{% if request.endpoint == 'categorias' %}active{% endif %}">
-                        <i class="bi bi-tags me-3 fs-5"></i> Categorías
+                        <i class="bi bi-tags me-3 fs-5"></i> {{ t.categories }}
                     </a>
                     
                     <a href="{{ url_for('usuarios') }}" class="{% if request.endpoint == 'usuarios' %}active{% endif %}">
-                        <i class="bi bi-people me-3 fs-5"></i> Usuarios
+                        <i class="bi bi-people me-3 fs-5"></i> {{ t.users }}
                     </a>
                 {% endif %}
+
+                <div class="px-4 py-2 mt-3 mb-1 text-white-50 small text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 1px;">{{ t.account }}</div>
+                <a href="{{ url_for('configuracion') }}" class="{% if request.endpoint == 'configuracion' %}active{% endif %}">
+                    <i class="bi bi-gear me-3 fs-5"></i> {{ t.settings }}
+                </a>
             {% endif %}
         </nav>
 
@@ -156,11 +199,11 @@
                     </div>
                 </div>
                 <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm w-100 border-0 text-start px-0">
-                    <i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión
+                    <i class="bi bi-box-arrow-right me-2"></i> {{ t.logout }}
                 </a>
             {% else %}
                 <a href="{{ url_for('index') }}" class="btn btn-primary w-100">
-                    <i class="bi bi-box-arrow-in-right me-2"></i> Iniciar sesión
+                    <i class="bi bi-box-arrow-in-right me-2"></i> {{ t.login }}
                 </a>
             {% endif %}
         </div>
