@@ -4,7 +4,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from reportlab.lib import colors
 from io import BytesIO
+import csv
+import io
 
 import os
 
@@ -200,15 +203,39 @@ def dashboard():
         """)
         recientes = cur.fetchall()
 
+        # Datos para gráfico: Stock por Categoría
+        cur.execute("""
+            SELECT c.nombre, SUM(p.stock)
+            FROM productos p
+            LEFT JOIN categorias c ON p.id_categoria = c.id
+            GROUP BY c.nombre
+        """)
+        stock_categoria = cur.fetchall()
+
+        # Datos para gráfico: Movimientos últimos 7 días
+        cur.execute("""
+            SELECT DATE(fecha) as dia,
+                   SUM(CASE WHEN tipo = 'entrada' THEN cantidad ELSE 0 END) as entradas,
+                   SUM(CASE WHEN tipo = 'salida' THEN cantidad ELSE 0 END) as salidas
+            FROM movimientos
+            WHERE fecha >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            GROUP BY dia
+            ORDER BY dia ASC
+        """)
+        movimientos_7dias = cur.fetchall()
+
     return render_template("dashboard.html",
                            total_productos=total_productos,
                            stock_bajo=stock_bajo,
                            total_usuarios=total_usuarios,
                            recientes=recientes,
+                           stock_categoria=stock_categoria,
+                           movimientos_7dias=movimientos_7dias,
                            rol=session["rol"],
                            usuario=session["usuario"])
 
 @app.route("/logout")
+@login_required
 def logout():
     session.clear()
     flash("Has cerrado sesión exitosamente.", "info")
@@ -613,24 +640,21 @@ def agregar_movimiento():
     flash("Movimiento registrado correctamente", "success")
     return redirect(url_for("movimientos"))
 
-@app.route('/movimientos/editar/<int:id>', methods=['GET', 'POST'])
+@app.route('/movimientos/editar/<int:id>', methods=['POST'])
+@admin_required
 def editar_movimiento(id):
     cur = mysql.connection.cursor()
-    if request.method == 'POST':
-        tipo = request.form['tipo']
-        cantidad = request.form['cantidad']
-        cur.execute("UPDATE movimientos SET tipo=%s, cantidad=%s WHERE id=%s", (tipo, cantidad, id))
-        mysql.connection.commit()
-        flash('Movimiento actualizado correctamente.', 'success')
-        return redirect(url_for('movimientos'))
-    else:
-        cur.execute("SELECT * FROM movimientos WHERE id=%s", (id,))
-        movimiento = cur.fetchone()
-        cur.close()
-        return render_template('editar_movimiento.html', movimiento=movimiento)
+    tipo = request.form['tipo']
+    cantidad = request.form['cantidad']
+    cur.execute("UPDATE movimientos SET tipo=%s, cantidad=%s WHERE id=%s", (tipo, cantidad, id))
+    mysql.connection.commit()
+    cur.close()
+    flash('Movimiento actualizado correctamente.', 'success')
+    return redirect(url_for('movimientos'))
 
 
 @app.route('/movimientos/eliminar/<int:id>', methods=['POST'])
+@admin_required
 def eliminar_movimiento(id):
     cur = mysql.connection.cursor()
     cur.execute("DELETE FROM movimientos WHERE id=%s", (id,))
@@ -658,24 +682,55 @@ def generar_pdf(titulo, columnas, datos):
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=letter)
     pdf.setTitle(titulo)
-    pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawString(200, 750, titulo)
-    pdf.setFont("Helvetica", 10)
 
-    y = 720
-    pdf.line(50, y + 10, 560, y + 10)
-    pdf.drawString(50, y, " | ".join(columnas))
-    pdf.line(50, y - 5, 560, y - 5)
-    y -= 20
+    # Encabezado
+    pdf.setFont("Helvetica-Bold", 18)
+    pdf.drawCentredString(300, 750, "Papelería LyM")
+    pdf.setFont("Helvetica", 14)
+    pdf.drawCentredString(300, 730, titulo)
 
-    for fila in datos:
-        fila_texto = " | ".join([str(c) for c in fila])
-        pdf.drawString(50, y, fila_texto)
+    pdf.setFont("Helvetica-Bold", 10)
+    y = 690
+
+    # Estilo de tabla (Cabecera)
+    pdf.setFillColor(colors.lightgrey)
+    pdf.rect(50, y - 5, 510, 20, fill=1)
+    pdf.setFillColor(colors.black)
+
+    # Dibujar cabeceras
+    x_offset = 55
+    col_widths = [40, 140, 150, 80, 100] if len(columnas) == 5 else [40, 60, 50, 120, 120, 120]
+
+    # Si col_widths no coincide con len(columnas), usar ancho equitativo
+    if len(col_widths) != len(columnas):
+        col_widths = [510 / len(columnas)] * len(columnas)
+
+    for i, col in enumerate(columnas):
+        pdf.drawString(x_offset, y, col)
+        x_offset += col_widths[i]
+
+    y -= 25
+    pdf.setFont("Helvetica", 9)
+
+    # Dibujar filas
+    for i, fila in enumerate(datos):
+        if i % 2 == 0:
+            pdf.setFillColor(colors.whitesmoke)
+            pdf.rect(50, y - 5, 510, 15, fill=1)
+            pdf.setFillColor(colors.black)
+
+        x_offset = 55
+        for j, cell in enumerate(fila):
+            text = str(cell)
+            max_len = 20 if col_widths[j] < 100 else 30
+            pdf.drawString(x_offset, y, text[:max_len])
+            x_offset += col_widths[j]
+
         y -= 15
-        if y < 60:
+        if y < 50:
             pdf.showPage()
             y = 750
-            pdf.setFont("Helvetica", 10)
+            pdf.setFont("Helvetica", 9)
 
     pdf.save()
     buffer.seek(0)
@@ -719,7 +774,43 @@ def reporte_movimientos():
     """)
     datos = cur.fetchall()
     cur.close()
-    return generar_pdf("Reporte de Movimientos", ["ID", "Tipo", "Cantidad", "Producto", "Usuario", "Fecha"], datos)
+    return generar_pdf("Reporte de Movimientos", ["ID", "Tipo", "Cant.", "Producto", "Usuario", "Fecha"], datos)
+
+@app.route("/reporte/productos/csv")
+@admin_required
+def reporte_productos_csv():
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT p.id, p.nombre, p.descripcion, p.precio, p.stock, c.nombre
+        FROM productos p
+        LEFT JOIN categorias c ON p.id_categoria = c.id
+    """)
+    datos = cur.fetchall()
+    cur.close()
+
+    output = BytesIO()
+    # Escribir CSV en el buffer (usando string IO intermedio para csv.writer)
+    si = io.StringIO()
+    cw = csv.writer(si)
+    cw.writerow(["ID", "Nombre", "Descripción", "Precio", "Stock", "Categoría"])
+    cw.writerows(datos)
+
+    output.write(si.getvalue().encode('utf-8'))
+    output.seek(0)
+
+    response = make_response(output.getvalue())
+    response.headers["Content-Disposition"] = "attachment; filename=inventario_productos.csv"
+    response.headers["Content-type"] = "text/csv"
+    return response
+
+# --- MANEJO DE ERRORES ---
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html', rol=session.get("rol"), usuario=session.get("usuario")), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html', rol=session.get("rol"), usuario=session.get("usuario")), 500
 
 # --- MAIN ---
 if __name__ == "__main__":

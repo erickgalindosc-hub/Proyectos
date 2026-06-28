@@ -51,6 +51,29 @@
     </div>
 </div>
 
+<div class="row g-4 mb-4">
+    <div class="col-12 col-xl-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-pie-chart me-2"></i>Stock por Categoría</h5>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <canvas id="chartCategorias" style="max-height: 250px;"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-graph-up me-2"></i>Movimientos (Últimos 7 días)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="chartMovimientos" style="max-height: 250px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-12">
         <div class="card border-0 shadow-sm">
@@ -104,4 +127,57 @@
         </div>
     </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Gráfico de Categorías
+    const ctxCat = document.getElementById('chartCategorias').getContext('2d');
+    new Chart(ctxCat, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for c in stock_categoria %}'{{ c[0] or "Sin Categoría" }}',{% endfor %}],
+            datasets: [{
+                data: [{% for c in stock_categoria %}{{ c[1] }},{% endfor %}],
+                backgroundColor: ['#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#dc3545', '#fd7e14', '#ffc107', '#198754', '#20c997', '#0dcaf0'],
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+
+    // Gráfico de Movimientos
+    const ctxMov = document.getElementById('chartMovimientos').getContext('2d');
+    new Chart(ctxMov, {
+        type: 'bar',
+        data: {
+            labels: [{% for m in movimientos_7dias %}'{{ m[0].strftime("%d/%m") }}',{% endfor %}],
+            datasets: [
+                {
+                    label: 'Entradas',
+                    data: [{% for m in movimientos_7dias %}{{ m[1] }},{% endfor %}],
+                    backgroundColor: 'rgba(25, 135, 84, 0.7)',
+                    borderColor: '#198754',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Salidas',
+                    data: [{% for m in movimientos_7dias %}{{ m[2] }},{% endfor %}],
+                    backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                    borderColor: '#dc3545',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true }
+            },
+            plugins: { legend: { position: 'top' } }
+        }
+    });
+</script>
 {% endblock %}
