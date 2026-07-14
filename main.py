@@ -1,4 +1,5 @@
 import flet as ft
+from flet import Colors, Icons
 import sqlite3
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -84,8 +85,8 @@ def main(page: ft.Page):
     snack_bar = ft.SnackBar(content=ft.Text(""))
     page.snack_bar = snack_bar
 
-    def show_msg(text, color=ft.colors.GREEN):
-        snack_bar.content = ft.Text(text, color=ft.colors.WHITE, weight=ft.FontWeight.BOLD)
+    def show_msg(text, color=Colors.GREEN):
+        snack_bar.content = ft.Text(text, color=Colors.WHITE, weight=ft.FontWeight.BOLD)
         snack_bar.bgcolor = color
         snack_bar.open = True
         page.update()
@@ -99,9 +100,9 @@ def main(page: ft.Page):
 
         # Build Navigation Bar
         nav_destinations = [
-            ft.NavigationDestination(icon=ft.icons.DASHBOARD_ROUNDED, label=get_text('dashboard', lang)),
-            ft.NavigationDestination(icon=ft.icons.SHOPPING_BAG_ROUNDED, label=get_text('products', lang)),
-            ft.NavigationDestination(icon=ft.icons.SWAP_HORIZ_ROUNDED, label=get_text('movements', lang)),
+            ft.NavigationDestination(icon=Icons.DASHBOARD_ROUNDED, label=get_text('dashboard', lang)),
+            ft.NavigationDestination(icon=Icons.SHOPPING_BAG_ROUNDED, label=get_text('products', lang)),
+            ft.NavigationDestination(icon=Icons.SWAP_HORIZ_ROUNDED, label=get_text('movements', lang)),
         ]
 
         def on_nav_change(e):
@@ -122,20 +123,20 @@ def main(page: ft.Page):
         # Drawer for other screens: Categories, Users, Settings, Logout
         drawer_items = [
             ft.NavigationDrawerDestination(
-                icon=ft.icons.ACCOUNT_CIRCLE,
+                icon=Icons.ACCOUNT_CIRCLE,
                 label=f"{session.username} ({session.role.capitalize()})"
             ),
             ft.Divider(),
             ft.NavigationDrawerDestination(
-                icon=ft.icons.DASHBOARD_ROUNDED,
+                icon=Icons.DASHBOARD_ROUNDED,
                 label=get_text('dashboard', lang)
             ),
             ft.NavigationDrawerDestination(
-                icon=ft.icons.SHOPPING_BAG_ROUNDED,
+                icon=Icons.SHOPPING_BAG_ROUNDED,
                 label=get_text('products', lang)
             ),
             ft.NavigationDrawerDestination(
-                icon=ft.icons.SWAP_HORIZ_ROUNDED,
+                icon=Icons.SWAP_HORIZ_ROUNDED,
                 label=get_text('movements', lang)
             ),
         ]
@@ -143,23 +144,23 @@ def main(page: ft.Page):
         if session.role == 'admin':
             drawer_items.extend([
                 ft.NavigationDrawerDestination(
-                    icon=ft.icons.CATEGORY_ROUNDED,
+                    icon=Icons.CATEGORY_ROUNDED,
                     label=get_text('categories', lang)
                 ),
                 ft.NavigationDrawerDestination(
-                    icon=ft.icons.PEOPLE_ROUNDED,
+                    icon=Icons.PEOPLE_ROUNDED,
                     label=get_text('users', lang)
                 ),
             ])
 
         drawer_items.extend([
             ft.NavigationDrawerDestination(
-                icon=ft.icons.SETTINGS_ROUNDED,
+                icon=Icons.SETTINGS_ROUNDED,
                 label=get_text('settings', lang)
             ),
             ft.Divider(),
             ft.NavigationDrawerDestination(
-                icon=ft.icons.LOGOUT_ROUNDED,
+                icon=Icons.LOGOUT_ROUNDED,
                 label=get_text('logout', lang)
             )
         ])
@@ -187,7 +188,7 @@ def main(page: ft.Page):
             elif label == get_text('logout', lang):
                 session.clear()
                 navigate_to("/login")
-                show_msg("Sesión cerrada" if lang == 'es' else "Logged out successfully", ft.colors.BLUE)
+                show_msg("Sesión cerrada" if lang == 'es' else "Logged out successfully", Colors.BLUE)
 
         nav_drawer = ft.NavigationDrawer(
             controls=drawer_items,
@@ -196,12 +197,12 @@ def main(page: ft.Page):
 
         app_bar = ft.AppBar(
             title=ft.Text(current_view_title, weight=ft.FontWeight.BOLD),
-            bgcolor=ft.colors.BLUE_700,
-            color=ft.colors.WHITE,
+            bgcolor=Colors.BLUE_700,
+            color=Colors.WHITE,
             center_title=True,
             leading=ft.IconButton(
-                icon=ft.icons.MENU,
-                icon_color=ft.colors.WHITE,
+                icon=Icons.MENU,
+                icon_color=Colors.WHITE,
                 on_click=lambda _: page.show_drawer(nav_drawer)
             )
         )
@@ -219,7 +220,7 @@ def main(page: ft.Page):
         # Protect Routes
         if page.route not in ["/", "/login", "/register"] and not session.user_id:
             page.route = "/login"
-            show_msg("Debes iniciar sesión primero.", ft.colors.ORANGE)
+            show_msg("Debes iniciar sesión primero.", Colors.ORANGE)
 
         # -------------------------------------------------------------
         # 1. Login View
@@ -232,7 +233,7 @@ def main(page: ft.Page):
                 email = txt_email.value.strip()
                 password = txt_password.value.strip()
                 if not email or not password:
-                    show_msg(get_text('all_fields_required', lang), ft.colors.RED)
+                    show_msg(get_text('all_fields_required', lang), Colors.RED)
                     return
 
                 conn = get_db_connection()
@@ -243,25 +244,25 @@ def main(page: ft.Page):
 
                 if user and check_password_hash(user[2], password):
                     session.set_user(user[0], user[1], user[3], user[4], user[5])
-                    show_msg(get_text('success', session.lang), ft.colors.GREEN)
+                    show_msg(get_text('success', session.lang), Colors.GREEN)
                     navigate_to("/dashboard")
                 else:
-                    show_msg(get_text('invalid_credentials', lang), ft.colors.RED)
+                    show_msg(get_text('invalid_credentials', lang), Colors.RED)
 
-            btn_login = ft.ElevatedButton(get_text('login', lang), on_click=do_login, width=320, bgcolor=ft.colors.BLUE_700, color=ft.colors.WHITE)
+            btn_login = ft.ElevatedButton(get_text('login', lang), on_click=do_login, width=320, bgcolor=Colors.BLUE_700, color=Colors.WHITE)
             btn_to_register = ft.TextButton(get_text('no_account', lang), on_click=lambda _: navigate_to("/register"))
 
             page.views.append(
                 ft.View(
                     "/login",
                     [
-                        ft.AppBar(title=ft.Text("Papelería LyM - Login"), bgcolor=ft.colors.BLUE_700, color=ft.colors.WHITE, center_title=True),
+                        ft.AppBar(title=ft.Text("Papelería LyM - Login"), bgcolor=Colors.BLUE_700, color=Colors.WHITE, center_title=True),
                         ft.Container(
                             content=ft.Column(
                                 [
-                                    ft.Icon(ft.icons.BOOKMARK_ADDED_ROUNDED, size=80, color=ft.colors.BLUE_700),
+                                    ft.Icon(Icons.BOOKMARK_ADDED_ROUNDED, size=80, color=Colors.BLUE_700),
                                     ft.Text("Papelería LyM", size=30, weight=ft.FontWeight.BOLD),
-                                    ft.Text("Gestión de Inventario", size=16, color=ft.colors.GREY_600),
+                                    ft.Text("Gestión de Inventario", size=16, color=Colors.GREY_600),
                                     ft.VerticalDivider(height=20),
                                     txt_email,
                                     txt_password,
@@ -297,11 +298,11 @@ def main(page: ft.Page):
                 confirm = txt_confirm.value.strip()
 
                 if not all([name, email, password, confirm]):
-                    show_msg(get_text('all_fields_required', lang), ft.colors.RED)
+                    show_msg(get_text('all_fields_required', lang), Colors.RED)
                     return
 
                 if password != confirm:
-                    show_msg("Las contraseñas no coinciden" if lang == 'es' else "Passwords do not match", ft.colors.RED)
+                    show_msg("Las contraseñas no coinciden" if lang == 'es' else "Passwords do not match", Colors.RED)
                     return
 
                 conn = get_db_connection()
@@ -309,7 +310,7 @@ def main(page: ft.Page):
                 cursor.execute("SELECT id FROM usuarios WHERE correo=?", (email,))
                 if cursor.fetchone():
                     conn.close()
-                    show_msg(get_text('email_exists', lang), ft.colors.RED)
+                    show_msg(get_text('email_exists', lang), Colors.RED)
                     return
 
                 hash_pass = generate_password_hash(password)
@@ -320,21 +321,21 @@ def main(page: ft.Page):
                 conn.commit()
                 conn.close()
 
-                show_msg("Registro exitoso. Inicia sesión." if lang == 'es' else "Registration successful. Login.", ft.colors.GREEN)
+                show_msg("Registro exitoso. Inicia sesión." if lang == 'es' else "Registration successful. Login.", Colors.GREEN)
                 navigate_to("/login")
 
-            btn_register = ft.ElevatedButton(get_text('register', lang), on_click=do_register, width=320, bgcolor=ft.colors.BLUE_700, color=ft.colors.WHITE)
+            btn_register = ft.ElevatedButton(get_text('register', lang), on_click=do_register, width=320, bgcolor=Colors.BLUE_700, color=Colors.WHITE)
             btn_to_login = ft.TextButton(get_text('have_account', lang), on_click=lambda _: navigate_to("/login"))
 
             page.views.append(
                 ft.View(
                     "/register",
                     [
-                        ft.AppBar(title=ft.Text("Papelería LyM - Registro"), bgcolor=ft.colors.BLUE_700, color=ft.colors.WHITE, center_title=True),
+                        ft.AppBar(title=ft.Text("Papelería LyM - Registro"), bgcolor=Colors.BLUE_700, color=Colors.WHITE, center_title=True),
                         ft.Container(
                             content=ft.Column(
                                 [
-                                    ft.Icon(ft.icons.PERSON_ADD_ROUNDED, size=60, color=ft.colors.BLUE_700),
+                                    ft.Icon(Icons.PERSON_ADD_ROUNDED, size=60, color=Colors.BLUE_700),
                                     ft.Text("Crear Cuenta", size=24, weight=ft.FontWeight.BOLD),
                                     ft.VerticalDivider(height=10),
                                     txt_name,
@@ -396,11 +397,11 @@ def main(page: ft.Page):
                     ft.Container(
                         content=ft.Row(
                             [
-                                ft.Icon(ft.icons.WARNING_AMBER_ROUNDED, color=ft.colors.RED_800),
-                                ft.Text(f"{get_text('low_stock_warning', lang)} {stock_bajo} productos", color=ft.colors.RED_800, weight=ft.FontWeight.BOLD),
+                                ft.Icon(Icons.WARNING_AMBER_ROUNDED, color=Colors.RED_800),
+                                ft.Text(f"{get_text('low_stock_warning', lang)} {stock_bajo} productos", color=Colors.RED_800, weight=ft.FontWeight.BOLD),
                             ]
                         ),
-                        bgcolor=ft.colors.RED_100,
+                        bgcolor=Colors.RED_100, # Handled elegantly, or Colors.RED_100, but Flet hex strings are great
                         border_radius=8,
                         padding=12
                     )
@@ -409,8 +410,8 @@ def main(page: ft.Page):
             # Build recent movements list
             mov_list = []
             for mov in recientes:
-                icon_color = ft.colors.GREEN if mov[0] == 'entrada' else ft.colors.RED
-                icon_name = ft.icons.ARROW_UPWARD if mov[0] == 'entrada' else ft.icons.ARROW_DOWNWARD
+                icon_color = Colors.GREEN if mov[0] == 'entrada' else Colors.RED
+                icon_name = Icons.ARROW_UPWARD if mov[0] == 'entrada' else Icons.ARROW_DOWNWARD
                 mov_list.append(
                     ft.ListTile(
                         leading=ft.Icon(icon_name, color=icon_color),
@@ -420,7 +421,7 @@ def main(page: ft.Page):
                 )
 
             if not mov_list:
-                mov_list.append(ft.Text("No hay movimientos registrados.", color=ft.colors.GREY_600, style=ft.TextThemeStyle.BODY_SMALL))
+                mov_list.append(ft.Text("No hay movimientos registrados.", color=Colors.GREY_600, style=ft.TextThemeStyle.BODY_SMALL))
 
             page.views.append(
                 ft.View(
@@ -431,7 +432,7 @@ def main(page: ft.Page):
                             content=ft.Column(
                                 [
                                     ft.Text(f"Bienvenido/a, {session.username}!", size=22, weight=ft.FontWeight.BOLD),
-                                    ft.Text(get_text('main_panel', lang), size=14, color=ft.colors.GREY_600),
+                                    ft.Text(get_text('main_panel', lang), size=14, color=Colors.GREY_600),
                                     ft.Divider(height=10),
                                     *alert_boxes,
                                     ft.Row(
@@ -440,7 +441,7 @@ def main(page: ft.Page):
                                                 content=ft.Container(
                                                     content=ft.Column(
                                                         [
-                                                            ft.Icon(ft.icons.SHOPPING_BAG, color=ft.colors.BLUE_700),
+                                                            ft.Icon(Icons.SHOPPING_BAG, color=Colors.BLUE_700),
                                                             ft.Text(str(total_productos), size=24, weight=ft.FontWeight.BOLD),
                                                             ft.Text(get_text('total_products', lang), size=11, text_align=ft.TextAlign.CENTER)
                                                         ],
@@ -454,8 +455,8 @@ def main(page: ft.Page):
                                                 content=ft.Container(
                                                     content=ft.Column(
                                                         [
-                                                            ft.Icon(ft.icons.WARNING, color=ft.colors.ORANGE_700),
-                                                            ft.Text(str(stock_bajo), size=24, weight=ft.FontWeight.BOLD, color=ft.colors.ORANGE_700 if stock_bajo > 0 else None),
+                                                            ft.Icon(Icons.WARNING, color=Colors.ORANGE_700),
+                                                            ft.Text(str(stock_bajo), size=24, weight=ft.FontWeight.BOLD, color=Colors.ORANGE_700 if stock_bajo > 0 else None),
                                                             ft.Text(get_text('stock_bajo', lang), size=11, text_align=ft.TextAlign.CENTER)
                                                         ],
                                                         horizontal_alignment=ft.CrossAxisAlignment.CENTER
@@ -468,7 +469,7 @@ def main(page: ft.Page):
                                                 content=ft.Container(
                                                     content=ft.Column(
                                                         [
-                                                            ft.Icon(ft.icons.PEOPLE, color=ft.colors.GREEN_700),
+                                                            ft.Icon(Icons.PEOPLE, color=Colors.GREEN_700),
                                                             ft.Text(str(total_usuarios), size=24, weight=ft.FontWeight.BOLD),
                                                             ft.Text(get_text('total_users', lang), size=11, text_align=ft.TextAlign.CENTER)
                                                         ],
@@ -528,20 +529,20 @@ def main(page: ft.Page):
 
                 for p in prods:
                     # Stock Color formatting
-                    stock_text_color = ft.colors.RED_800 if p["stock"] < 10 else ft.colors.GREEN_800
+                    stock_text_color = Colors.RED_800 if p["stock"] < 10 else Colors.GREEN_800
 
                     # Edit / Delete controls if Admin
                     action_buttons = []
                     if session.role == 'admin':
                         action_buttons = [
                             ft.IconButton(
-                                icon=ft.icons.EDIT,
-                                icon_color=ft.colors.BLUE,
+                                icon=Icons.EDIT,
+                                icon_color=Colors.BLUE,
                                 on_click=lambda ev, prod_id=p["id"]: open_edit_product_dialog(prod_id)
                             ),
                             ft.IconButton(
-                                icon=ft.icons.DELETE,
-                                icon_color=ft.colors.RED,
+                                icon=Icons.DELETE,
+                                icon_color=Colors.RED,
                                 on_click=lambda ev, prod_id=p["id"]: delete_product(prod_id)
                             ),
                         ]
@@ -551,7 +552,7 @@ def main(page: ft.Page):
                     if image_path and os.path.exists(image_path):
                         avatar = ft.Image(src=image_path, width=50, height=50, fit=ft.ImageFit.COVER)
                     else:
-                        avatar = ft.Icon(ft.icons.IMAGE_NOT_SUPPORTED_ROUNDED, size=40, color=ft.colors.GREY_400)
+                        avatar = ft.Icon(Icons.IMAGE_NOT_SUPPORTED_ROUNDED, size=40, color=Colors.GREY_400)
 
                     products_list_column.controls.append(
                         ft.Card(
@@ -596,7 +597,7 @@ def main(page: ft.Page):
                 cursor.execute("DELETE FROM productos WHERE id=?", (pid,))
                 conn.commit()
                 conn.close()
-                show_msg("Producto eliminado correctamente" if lang == 'es' else "Product deleted successfully", ft.colors.RED)
+                show_msg("Producto eliminado correctamente" if lang == 'es' else "Product deleted successfully", Colors.RED)
                 load_products(search_query.value)
 
             def open_add_product_dialog(e):
@@ -617,7 +618,7 @@ def main(page: ft.Page):
 
                 def save_new_product(ev):
                     if not txt_pname.value or not txt_pprice.value or not txt_pstock.value:
-                        show_msg("Nombre, precio y stock son obligatorios.", ft.colors.RED)
+                        show_msg("Nombre, precio y stock son obligatorios.", Colors.RED)
                         return
 
                     conn_add = get_db_connection()
@@ -635,8 +636,8 @@ def main(page: ft.Page):
                     )
                     conn_add.commit()
                     conn_add.close()
-                    page.close_dialog()
-                    show_msg("Producto agregado correctamente", ft.colors.GREEN)
+                    page.pop_dialog()
+                    show_msg("Producto agregado correctamente", Colors.GREEN)
                     load_products(search_query.value)
 
                 dlg = ft.AlertDialog(
@@ -649,7 +650,7 @@ def main(page: ft.Page):
                         spacing=10
                     ),
                     actions=[
-                        ft.TextButton("Cancelar", on_click=lambda _: page.close_dialog()),
+                        ft.TextButton("Cancelar", on_click=lambda _: page.pop_dialog()),
                         ft.ElevatedButton("Guardar", on_click=save_new_product)
                     ]
                 )
@@ -676,7 +677,7 @@ def main(page: ft.Page):
 
                 def save_edited_product(ev):
                     if not txt_pname.value or not txt_pprice.value or not txt_pstock.value:
-                        show_msg("Campos obligatorios faltantes.", ft.colors.RED)
+                        show_msg("Campos obligatorios faltantes.", Colors.RED)
                         return
 
                     conn_edit = get_db_connection()
@@ -696,8 +697,8 @@ def main(page: ft.Page):
                     ))
                     conn_edit.commit()
                     conn_edit.close()
-                    page.close_dialog()
-                    show_msg("Producto actualizado correctamente", ft.colors.GREEN)
+                    page.pop_dialog()
+                    show_msg("Producto actualizado correctamente", Colors.GREEN)
                     load_products(search_query.value)
 
                 dlg = ft.AlertDialog(
@@ -710,7 +711,7 @@ def main(page: ft.Page):
                         spacing=10
                     ),
                     actions=[
-                        ft.TextButton("Cancelar", on_click=lambda _: page.close_dialog()),
+                        ft.TextButton("Cancelar", on_click=lambda _: page.pop_dialog()),
                         ft.ElevatedButton("Guardar", on_click=save_edited_product)
                     ]
                 )
@@ -723,7 +724,7 @@ def main(page: ft.Page):
                 cursor.execute("DELETE FROM sqlite_sequence WHERE name='productos'")
                 conn.commit()
                 conn.close()
-                show_msg("Tabla de productos reiniciada correctamente.", ft.colors.RED)
+                show_msg("Tabla de productos reiniciada correctamente.", Colors.RED)
                 load_products()
 
             def on_pdf_report(e):
@@ -738,15 +739,15 @@ def main(page: ft.Page):
                 conn.close()
 
                 path = generate_pdf_report("Reporte de Productos", ["ID", "Nombre", "Categoría", "Precio", "Stock"], datos)
-                show_msg(f"PDF generado: {path}", ft.colors.BLUE)
+                show_msg(f"PDF generado: {path}", Colors.BLUE)
 
             # Build UI Header buttons
             action_row = ft.Row(spacing=5)
             if session.role == 'admin':
                 action_row.controls.extend([
-                    ft.ElevatedButton(get_text('add', lang), icon=ft.icons.ADD, on_click=open_add_product_dialog, bgcolor=ft.colors.BLUE_700, color=ft.colors.WHITE),
-                    ft.IconButton(ft.icons.REFRESH_ROUNDED, tooltip=get_text('reset_table', lang), icon_color=ft.colors.RED, on_click=reset_products_table),
-                    ft.IconButton(ft.icons.PICTURE_AS_PDF_ROUNDED, tooltip=get_text('generate_report', lang), icon_color=ft.colors.BLUE_700, on_click=on_pdf_report)
+                    ft.ElevatedButton(get_text('add', lang), icon=Icons.ADD, on_click=open_add_product_dialog, bgcolor=Colors.BLUE_700, color=Colors.WHITE),
+                    ft.IconButton(Icons.REFRESH_ROUNDED, tooltip=get_text('reset_table', lang), icon_color=Colors.RED, on_click=reset_products_table),
+                    ft.IconButton(Icons.PICTURE_AS_PDF_ROUNDED, tooltip=get_text('generate_report', lang), icon_color=Colors.BLUE_700, on_click=on_pdf_report)
                 ])
 
             search_query.on_change = lambda e: load_products(search_query.value)
@@ -759,7 +760,7 @@ def main(page: ft.Page):
                         ft.Container(
                             content=ft.Column(
                                 [
-                                    ft.Row([search_query, ft.IconButton(ft.icons.SEARCH, on_click=lambda _: load_products(search_query.value))]),
+                                    ft.Row([search_query, ft.IconButton(Icons.SEARCH, on_click=lambda _: load_products(search_query.value))]),
                                     action_row,
                                     ft.Divider(),
                                     products_list_column
@@ -812,8 +813,8 @@ def main(page: ft.Page):
                                         ),
                                         ft.Row(
                                             [
-                                                ft.IconButton(ft.icons.EDIT, icon_color=ft.colors.BLUE, on_click=lambda ev, cid=c["id"]: open_edit_category_dialog(cid)),
-                                                ft.IconButton(ft.icons.DELETE, icon_color=ft.colors.RED, on_click=lambda ev, cid=c["id"]: delete_category(cid))
+                                                ft.IconButton(Icons.EDIT, icon_color=Colors.BLUE, on_click=lambda ev, cid=c["id"]: open_edit_category_dialog(cid)),
+                                                ft.IconButton(Icons.DELETE, icon_color=Colors.RED, on_click=lambda ev, cid=c["id"]: delete_category(cid))
                                             ],
                                             spacing=2
                                         )
@@ -831,7 +832,7 @@ def main(page: ft.Page):
                 cursor.execute("DELETE FROM categorias WHERE id=?", (cid,))
                 conn.commit()
                 conn.close()
-                show_msg("Categoría eliminada correctamente", ft.colors.RED)
+                show_msg("Categoría eliminada correctamente", Colors.RED)
                 load_categories(search_query.value)
 
             def open_add_category_dialog(e):
@@ -840,22 +841,22 @@ def main(page: ft.Page):
 
                 def save_new_category(ev):
                     if not txt_cname.value:
-                        show_msg("El nombre es obligatorio", ft.colors.RED)
+                        show_msg("El nombre es obligatorio", Colors.RED)
                         return
                     conn_add = get_db_connection()
                     cursor_add = conn_add.cursor()
                     cursor_add.execute("INSERT INTO categorias (nombre, descripcion) VALUES (?, ?)", (txt_cname.value.strip(), txt_cdesc.value.strip()))
                     conn_add.commit()
                     conn_add.close()
-                    page.close_dialog()
-                    show_msg("Categoría agregada correctamente", ft.colors.GREEN)
+                    page.pop_dialog()
+                    show_msg("Categoría agregada correctamente", Colors.GREEN)
                     load_categories(search_query.value)
 
                 dlg = ft.AlertDialog(
                     title=ft.Text("Agregar Categoría"),
                     content=ft.Column([txt_cname, txt_cdesc], tight=True),
                     actions=[
-                        ft.TextButton("Cancelar", on_click=lambda _: page.close_dialog()),
+                        ft.TextButton("Cancelar", on_click=lambda _: page.pop_dialog()),
                         ft.ElevatedButton("Guardar", on_click=save_new_category)
                     ]
                 )
@@ -873,22 +874,22 @@ def main(page: ft.Page):
 
                 def save_edited_category(ev):
                     if not txt_cname.value:
-                        show_msg("El nombre es obligatorio", ft.colors.RED)
+                        show_msg("El nombre es obligatorio", Colors.RED)
                         return
                     conn_edit = get_db_connection()
                     cursor_edit = conn_edit.cursor()
                     cursor_edit.execute("UPDATE categorias SET nombre=?, descripcion=? WHERE id=?", (txt_cname.value.strip(), txt_cdesc.value.strip(), cid))
                     conn_edit.commit()
                     conn_edit.close()
-                    page.close_dialog()
-                    show_msg("Categoría actualizada correctamente", ft.colors.GREEN)
+                    page.pop_dialog()
+                    show_msg("Categoría actualizada correctamente", Colors.GREEN)
                     load_categories(search_query.value)
 
                 dlg = ft.AlertDialog(
                     title=ft.Text("Editar Categoría"),
                     content=ft.Column([txt_cname, txt_cdesc], tight=True),
                     actions=[
-                        ft.TextButton("Cancelar", on_click=lambda _: page.close_dialog()),
+                        ft.TextButton("Cancelar", on_click=lambda _: page.pop_dialog()),
                         ft.ElevatedButton("Guardar", on_click=save_edited_category)
                     ]
                 )
@@ -901,7 +902,7 @@ def main(page: ft.Page):
                 cursor.execute("DELETE FROM sqlite_sequence WHERE name='categorias'")
                 conn.commit()
                 conn.close()
-                show_msg("Tabla de categorías reiniciada correctamente.", ft.colors.RED)
+                show_msg("Tabla de categorías reiniciada correctamente.", Colors.RED)
                 load_categories()
 
             search_query.on_change = lambda e: load_categories(search_query.value)
@@ -914,10 +915,10 @@ def main(page: ft.Page):
                         ft.Container(
                             content=ft.Column(
                                 [
-                                    ft.Row([search_query, ft.IconButton(ft.icons.SEARCH, on_click=lambda _: load_categories(search_query.value))]),
+                                    ft.Row([search_query, ft.IconButton(Icons.SEARCH, on_click=lambda _: load_categories(search_query.value))]),
                                     ft.Row([
-                                        ft.ElevatedButton(get_text('add', lang), icon=ft.icons.ADD, on_click=open_add_category_dialog, bgcolor=ft.colors.BLUE_700, color=ft.colors.WHITE),
-                                        ft.IconButton(ft.icons.REFRESH_ROUNDED, tooltip=get_text('reset_table', lang), icon_color=ft.colors.RED, on_click=reset_categories_table)
+                                        ft.ElevatedButton(get_text('add', lang), icon=Icons.ADD, on_click=open_add_category_dialog, bgcolor=Colors.BLUE_700, color=Colors.WHITE),
+                                        ft.IconButton(Icons.REFRESH_ROUNDED, tooltip=get_text('reset_table', lang), icon_color=Colors.RED, on_click=reset_categories_table)
                                     ], spacing=5),
                                     ft.Divider(),
                                     categories_list_column
@@ -963,8 +964,8 @@ def main(page: ft.Page):
                     action_buttons = []
                     if u["id"] != session.user_id:
                         action_buttons = [
-                            ft.IconButton(ft.icons.EDIT, icon_color=ft.colors.BLUE, on_click=lambda ev, uid=u["id"]: open_edit_user_dialog(uid)),
-                            ft.IconButton(ft.icons.DELETE, icon_color=ft.colors.RED, on_click=lambda ev, uid=u["id"]: delete_user(uid))
+                            ft.IconButton(Icons.EDIT, icon_color=Colors.BLUE, on_click=lambda ev, uid=u["id"]: open_edit_user_dialog(uid)),
+                            ft.IconButton(Icons.DELETE, icon_color=Colors.RED, on_click=lambda ev, uid=u["id"]: delete_user(uid))
                         ]
 
                     users_list_column.controls.append(
@@ -976,7 +977,7 @@ def main(page: ft.Page):
                                             [
                                                 ft.Text(u["nombre"], size=16, weight=ft.FontWeight.BOLD),
                                                 ft.Text(u["correo"], size=12),
-                                                ft.Text(f"Rol: {u['rol'].upper()}", size=11, color=ft.colors.BLUE_700 if u["rol"] == 'admin' else ft.colors.GREY_600)
+                                                ft.Text(f"Rol: {u['rol'].upper()}", size=11, color=Colors.BLUE_700 if u["rol"] == 'admin' else Colors.GREY_600)
                                             ],
                                             tight=True,
                                             expand=True
@@ -996,7 +997,7 @@ def main(page: ft.Page):
                 cursor.execute("DELETE FROM usuarios WHERE id=?", (uid,))
                 conn.commit()
                 conn.close()
-                show_msg("Usuario eliminado correctamente", ft.colors.RED)
+                show_msg("Usuario eliminado correctamente", Colors.RED)
                 load_users(search_query.value)
 
             def open_add_user_dialog(e):
@@ -1014,7 +1015,7 @@ def main(page: ft.Page):
 
                 def save_new_user(ev):
                     if not txt_uname.value or not txt_uemail.value or not txt_upass.value:
-                        show_msg("Campos obligatorios faltantes.", ft.colors.RED)
+                        show_msg("Campos obligatorios faltantes.", Colors.RED)
                         return
 
                     conn_add = get_db_connection()
@@ -1022,7 +1023,7 @@ def main(page: ft.Page):
                     cursor_add.execute("SELECT id FROM usuarios WHERE correo=?", (txt_uemail.value.strip(),))
                     if cursor_add.fetchone():
                         conn_add.close()
-                        show_msg(get_text('email_exists', lang), ft.colors.RED)
+                        show_msg(get_text('email_exists', lang), Colors.RED)
                         return
 
                     hash_pass = generate_password_hash(txt_upass.value.strip())
@@ -1032,15 +1033,15 @@ def main(page: ft.Page):
                     )
                     conn_add.commit()
                     conn_add.close()
-                    page.close_dialog()
-                    show_msg("Usuario agregado correctamente", ft.colors.GREEN)
+                    page.pop_dialog()
+                    show_msg("Usuario agregado correctamente", Colors.GREEN)
                     load_users(search_query.value)
 
                 dlg = ft.AlertDialog(
                     title=ft.Text("Agregar Usuario"),
                     content=ft.Column([txt_uname, txt_uemail, txt_upass, dd_urol], tight=True),
                     actions=[
-                        ft.TextButton("Cancelar", on_click=lambda _: page.close_dialog()),
+                        ft.TextButton("Cancelar", on_click=lambda _: page.pop_dialog()),
                         ft.ElevatedButton("Guardar", on_click=save_new_user)
                     ]
                 )
@@ -1066,7 +1067,7 @@ def main(page: ft.Page):
 
                 def save_edited_user(ev):
                     if not txt_uname.value or not txt_uemail.value:
-                        show_msg("Campos obligatorios faltantes.", ft.colors.RED)
+                        show_msg("Campos obligatorios faltantes.", Colors.RED)
                         return
 
                     conn_edit = get_db_connection()
@@ -1074,7 +1075,7 @@ def main(page: ft.Page):
                     cursor_edit.execute("SELECT id FROM usuarios WHERE correo=? AND id!=?", (txt_uemail.value.strip(), uid))
                     if cursor_edit.fetchone():
                         conn_edit.close()
-                        show_msg(get_text('email_in_use', lang), ft.colors.RED)
+                        show_msg(get_text('email_in_use', lang), Colors.RED)
                         return
 
                     cursor_edit.execute(
@@ -1083,15 +1084,15 @@ def main(page: ft.Page):
                     )
                     conn_edit.commit()
                     conn_edit.close()
-                    page.close_dialog()
-                    show_msg("Usuario actualizado correctamente", ft.colors.GREEN)
+                    page.pop_dialog()
+                    show_msg("Usuario actualizado correctamente", Colors.GREEN)
                     load_users(search_query.value)
 
                 dlg = ft.AlertDialog(
                     title=ft.Text("Editar Usuario"),
                     content=ft.Column([txt_uname, txt_uemail, dd_urol], tight=True),
                     actions=[
-                        ft.TextButton("Cancelar", on_click=lambda _: page.close_dialog()),
+                        ft.TextButton("Cancelar", on_click=lambda _: page.pop_dialog()),
                         ft.ElevatedButton("Guardar", on_click=save_edited_user)
                     ]
                 )
@@ -1105,7 +1106,7 @@ def main(page: ft.Page):
                 cursor.execute("UPDATE sqlite_sequence SET seq=1 WHERE name='usuarios'")
                 conn.commit()
                 conn.close()
-                show_msg("Tabla de usuarios reiniciada correctamente.", ft.colors.RED)
+                show_msg("Tabla de usuarios reiniciada correctamente.", Colors.RED)
                 load_users()
 
             def on_pdf_report(e):
@@ -1116,7 +1117,7 @@ def main(page: ft.Page):
                 conn.close()
 
                 path = generate_pdf_report("Reporte de Usuarios", ["ID", "Nombre", "Correo", "Rol", "Fecha"], datos)
-                show_msg(f"PDF generado: {path}", ft.colors.BLUE)
+                show_msg(f"PDF generado: {path}", Colors.BLUE)
 
             search_query.on_change = lambda e: load_users(search_query.value)
 
@@ -1128,11 +1129,11 @@ def main(page: ft.Page):
                         ft.Container(
                             content=ft.Column(
                                 [
-                                    ft.Row([search_query, ft.IconButton(ft.icons.SEARCH, on_click=lambda _: load_users(search_query.value))]),
+                                    ft.Row([search_query, ft.IconButton(Icons.SEARCH, on_click=lambda _: load_users(search_query.value))]),
                                     ft.Row([
-                                        ft.ElevatedButton(get_text('add', lang), icon=ft.icons.ADD, on_click=open_add_user_dialog, bgcolor=ft.colors.BLUE_700, color=ft.colors.WHITE),
-                                        ft.IconButton(ft.icons.REFRESH_ROUNDED, tooltip=get_text('reset_table', lang), icon_color=ft.colors.RED, on_click=reset_users_table),
-                                        ft.IconButton(ft.icons.PICTURE_AS_PDF_ROUNDED, tooltip=get_text('generate_report', lang), icon_color=ft.colors.BLUE_700, on_click=on_pdf_report)
+                                        ft.ElevatedButton(get_text('add', lang), icon=Icons.ADD, on_click=open_add_user_dialog, bgcolor=Colors.BLUE_700, color=Colors.WHITE),
+                                        ft.IconButton(Icons.REFRESH_ROUNDED, tooltip=get_text('reset_table', lang), icon_color=Colors.RED, on_click=reset_users_table),
+                                        ft.IconButton(Icons.PICTURE_AS_PDF_ROUNDED, tooltip=get_text('generate_report', lang), icon_color=Colors.BLUE_700, on_click=on_pdf_report)
                                     ], spacing=5),
                                     ft.Divider(),
                                     users_list_column
@@ -1183,14 +1184,14 @@ def main(page: ft.Page):
                 conn.close()
 
                 for m in moves:
-                    icon_color = ft.colors.GREEN if m["tipo"] == 'entrada' else ft.colors.RED
-                    icon_name = ft.icons.ARROW_UPWARD if m["tipo"] == 'entrada' else ft.icons.ARROW_DOWNWARD
+                    icon_color = Colors.GREEN if m["tipo"] == 'entrada' else Colors.RED
+                    icon_name = Icons.ARROW_UPWARD if m["tipo"] == 'entrada' else Icons.ARROW_DOWNWARD
 
                     action_buttons = []
                     if session.role == 'admin':
                         action_buttons = [
-                            ft.IconButton(ft.icons.EDIT, icon_color=ft.colors.BLUE, on_click=lambda ev, mid=m["id"]: open_edit_movement_dialog(mid)),
-                            ft.IconButton(ft.icons.DELETE, icon_color=ft.colors.RED, on_click=lambda ev, mid=m["id"]: delete_movement(mid))
+                            ft.IconButton(Icons.EDIT, icon_color=Colors.BLUE, on_click=lambda ev, mid=m["id"]: open_edit_movement_dialog(mid)),
+                            ft.IconButton(Icons.DELETE, icon_color=Colors.RED, on_click=lambda ev, mid=m["id"]: delete_movement(mid))
                         ]
 
                     movements_list_column.controls.append(
@@ -1223,7 +1224,7 @@ def main(page: ft.Page):
                 cursor.execute("DELETE FROM movimientos WHERE id=?", (mid,))
                 conn.commit()
                 conn.close()
-                show_msg("Movimiento eliminado correctamente", ft.colors.RED)
+                show_msg("Movimiento eliminado correctamente", Colors.RED)
                 load_movements(search_query.value)
 
             def open_add_movement_dialog(e):
@@ -1248,7 +1249,7 @@ def main(page: ft.Page):
 
                 def save_new_movement(ev):
                     if not txt_qty.value or not dd_prod.value:
-                        show_msg("Cantidad y producto son obligatorios.", ft.colors.RED)
+                        show_msg("Cantidad y producto son obligatorios.", Colors.RED)
                         return
 
                     qty = int(txt_qty.value)
@@ -1261,7 +1262,7 @@ def main(page: ft.Page):
                     stock_row = cursor_db.fetchone()
                     if not stock_row:
                         conn_db.close()
-                        show_msg(get_text('invalid_product', lang), ft.colors.RED)
+                        show_msg(get_text('invalid_product', lang), Colors.RED)
                         return
 
                     current_stock = stock_row["stock"]
@@ -1269,7 +1270,7 @@ def main(page: ft.Page):
 
                     if new_stock < 0:
                         conn_db.close()
-                        show_msg(get_text('no_stock', lang), ft.colors.RED)
+                        show_msg(get_text('no_stock', lang), Colors.RED)
                         return
 
                     cursor_db.execute("INSERT INTO movimientos (tipo, cantidad, id_producto, id_usuario) VALUES (?, ?, ?, ?)", (mtype, qty, prod_id, session.user_id))
@@ -1277,15 +1278,15 @@ def main(page: ft.Page):
                     conn_db.commit()
                     conn_db.close()
 
-                    page.close_dialog()
-                    show_msg("Movimiento registrado correctamente", ft.colors.GREEN)
+                    page.pop_dialog()
+                    show_msg("Movimiento registrado correctamente", Colors.GREEN)
                     load_movements(search_query.value)
 
                 dlg = ft.AlertDialog(
                     title=ft.Text("Registrar Movimiento"),
                     content=ft.Column([dd_type, dd_prod, txt_qty], tight=True),
                     actions=[
-                        ft.TextButton("Cancelar", on_click=lambda _: page.close_dialog()),
+                        ft.TextButton("Cancelar", on_click=lambda _: page.pop_dialog()),
                         ft.ElevatedButton("Guardar", on_click=save_new_movement)
                     ]
                 )
@@ -1310,7 +1311,7 @@ def main(page: ft.Page):
 
                 def save_edited_movement(ev):
                     if not txt_qty.value:
-                        show_msg("Cantidad es obligatoria.", ft.colors.RED)
+                        show_msg("Cantidad es obligatoria.", Colors.RED)
                         return
 
                     conn_edit = get_db_connection()
@@ -1318,15 +1319,15 @@ def main(page: ft.Page):
                     cursor_edit.execute("UPDATE movimientos SET tipo=?, cantidad=? WHERE id=?", (dd_type.value, int(txt_qty.value), mid))
                     conn_edit.commit()
                     conn_edit.close()
-                    page.close_dialog()
-                    show_msg("Movimiento actualizado correctamente", ft.colors.GREEN)
+                    page.pop_dialog()
+                    show_msg("Movimiento actualizado correctamente", Colors.GREEN)
                     load_movements(search_query.value)
 
                 dlg = ft.AlertDialog(
                     title=ft.Text("Editar Movimiento"),
                     content=ft.Column([dd_type, txt_qty], tight=True),
                     actions=[
-                        ft.TextButton("Cancelar", on_click=lambda _: page.close_dialog()),
+                        ft.TextButton("Cancelar", on_click=lambda _: page.pop_dialog()),
                         ft.ElevatedButton("Guardar", on_click=save_edited_movement)
                     ]
                 )
@@ -1339,7 +1340,7 @@ def main(page: ft.Page):
                 cursor.execute("DELETE FROM sqlite_sequence WHERE name='movimientos'")
                 conn.commit()
                 conn.close()
-                show_msg("Tabla de movimientos reiniciada correctamente.", ft.colors.RED)
+                show_msg("Tabla de movimientos reiniciada correctamente.", Colors.RED)
                 load_movements()
 
             def on_pdf_report(e):
@@ -1356,7 +1357,7 @@ def main(page: ft.Page):
                 conn.close()
 
                 path = generate_pdf_report("Reporte de Movimientos", ["ID", "Tipo", "Cantidad", "Producto", "Usuario", "Fecha"], datos)
-                show_msg(f"PDF generado: {path}", ft.colors.BLUE)
+                show_msg(f"PDF generado: {path}", Colors.BLUE)
 
             search_query.on_change = lambda e: load_movements(search_query.value)
 
@@ -1368,11 +1369,11 @@ def main(page: ft.Page):
                         ft.Container(
                             content=ft.Column(
                                 [
-                                    ft.Row([search_query, ft.IconButton(ft.icons.SEARCH, on_click=lambda _: load_movements(search_query.value))]),
+                                    ft.Row([search_query, ft.IconButton(Icons.SEARCH, on_click=lambda _: load_movements(search_query.value))]),
                                     ft.Row([
-                                        ft.ElevatedButton(get_text('add', lang), icon=ft.icons.ADD, on_click=open_add_movement_dialog, bgcolor=ft.colors.BLUE_700, color=ft.colors.WHITE),
-                                        ft.IconButton(ft.icons.REFRESH_ROUNDED, tooltip=get_text('reset_table', lang), icon_color=ft.colors.RED, on_click=reset_movements_table),
-                                        ft.IconButton(ft.icons.PICTURE_AS_PDF_ROUNDED, tooltip=get_text('generate_report', lang), icon_color=ft.colors.BLUE_700, on_click=on_pdf_report)
+                                        ft.ElevatedButton(get_text('add', lang), icon=Icons.ADD, on_click=open_add_movement_dialog, bgcolor=Colors.BLUE_700, color=Colors.WHITE),
+                                        ft.IconButton(Icons.REFRESH_ROUNDED, tooltip=get_text('reset_table', lang), icon_color=Colors.RED, on_click=reset_movements_table),
+                                        ft.IconButton(Icons.PICTURE_AS_PDF_ROUNDED, tooltip=get_text('generate_report', lang), icon_color=Colors.BLUE_700, on_click=on_pdf_report)
                                     ], spacing=5),
                                     ft.Divider(),
                                     movements_list_column
@@ -1428,7 +1429,7 @@ def main(page: ft.Page):
                 language = dd_lang.value
 
                 if not name or not email:
-                    show_msg("Todos los campos son obligatorios.", ft.colors.RED)
+                    show_msg("Todos los campos son obligatorios.", Colors.RED)
                     return
 
                 conn_up = get_db_connection()
@@ -1438,7 +1439,7 @@ def main(page: ft.Page):
                 cursor_up.execute("SELECT id FROM usuarios WHERE correo=? AND id!=?", (email, session.user_id))
                 if cursor_up.fetchone():
                     conn_up.close()
-                    show_msg(get_text('email_in_use', lang), ft.colors.RED)
+                    show_msg(get_text('email_in_use', lang), Colors.RED)
                     return
 
                 cursor_up.execute("""
@@ -1452,7 +1453,7 @@ def main(page: ft.Page):
                 # Refresh global session setting variables
                 session.set_user(session.user_id, name, session.role, theme, language)
 
-                show_msg(get_text('success', session.lang), ft.colors.GREEN)
+                show_msg(get_text('success', session.lang), Colors.GREEN)
                 navigate_to("/settings")
 
             page.views.append(
@@ -1471,7 +1472,7 @@ def main(page: ft.Page):
                                     dd_theme,
                                     dd_lang,
                                     ft.VerticalDivider(height=15),
-                                    ft.ElevatedButton(get_text('save_changes', lang), on_click=save_settings, width=320, bgcolor=ft.colors.BLUE_700, color=ft.colors.WHITE)
+                                    ft.ElevatedButton(get_text('save_changes', lang), on_click=save_settings, width=320, bgcolor=Colors.BLUE_700, color=Colors.WHITE)
                                 ],
                                 spacing=15,
                                 horizontal_alignment=ft.CrossAxisAlignment.CENTER
